@@ -39,6 +39,8 @@ printf "\nsource '$SETUP'" >> $HOME/.bashrc
 
 source util/fix-python.sh
 
+pip3 install -U numpy
+
 if [ -z $(which node) ]; then
     curl https://deb.nodesource.com/setup_16.x | bash
     apt-get install -y nodejs
