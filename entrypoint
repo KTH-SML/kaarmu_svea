@@ -7,7 +7,8 @@
 set -e
 
 # Set ROS_IP etc. for e.g. rviz remote connection
-source util/remote_ros.sh
+# https://stackoverflow.com/a/65912397
+remote_ros() { source util/remote_ros.sh; }; remote_ros
 
 # Install any dependencies that has been added by volume...
 
