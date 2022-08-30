@@ -1,3 +1,6 @@
 [submodule "src/ros_abconnect"]
 	path = src/ros_abconnect
 	url = https://github.com/kaarmu/ros_abconnect
+[submodule "src/aliencontrol"]
+	path = src/aliencontrol
+	url = https://github.com/kth-sml/aliencontrol
