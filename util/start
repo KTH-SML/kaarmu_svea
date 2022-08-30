@@ -9,7 +9,7 @@
 
 
 if [ -z "$*" ]
-then set -- $CONTAINER_NAME
+then set -- "$CONTAINER_NAME"
 fi
 
 
@@ -21,5 +21,4 @@ if [ "$UTIL_DEBUG" ]; then
     echo "$cmd"
 fi
 
-exec "$cmd"
-
+exec $cmd

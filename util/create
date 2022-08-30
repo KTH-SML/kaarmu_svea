@@ -32,4 +32,4 @@ if [ "$UTIL_BUILD" ]; then
     echo "$cmd"
 fi
 
-exec "$cmd"
+exec $cmd

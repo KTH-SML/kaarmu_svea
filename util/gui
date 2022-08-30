@@ -33,4 +33,4 @@ if [ "$UTIL_DEBUG" ]; then
     echo "$cmd"
 fi
 
-exec "$cmd"
+exec $cmd
