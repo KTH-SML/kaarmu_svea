@@ -1,0 +1,36 @@
+#! /bin/sh
+#
+# Run a ROS GUI application, e.g. RViz, using docker.
+# The container is removed once the program exits.
+#
+# Author: Kaj Munhoz Arfvidsson
+
+
+. "$(dirname "$0")/config.sh"
+
+
+if [ "$UTIL_DEBUG" ]; then
+    echo "# Calling..."
+    echo "xhost +local:docker"
+fi
+
+xhost +local:docker
+
+
+# Build command
+cmd="docker run"
+cmd="$cmd -it"
+cmd="$cmd -e DISPLAY"
+cmd="$cmd -e LIBGL_ALWAYS_SOFTWARE=1"
+cmd="$cmd -e QT_X11_NO_MITSHM=1"
+cmd="$cmd -v /tmp/.X11-unix:/tmp/.X11-unix"
+cmd="$cmd -v /etc/localtime:/etc/localtime:ro"
+cmd="$cmd --rm"
+cmd="$cmd osrf/ros:melodic-desktop"
+
+if [ "$UTIL_DEBUG" ]; then
+    echo "# Executing..."
+    echo "$cmd"
+fi
+
+exec "$cmd"

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="test_module" value="$(find svea_core)/src/svea"/>
+  <test test-name="test_svea_core_lib" pkg="ros_pytest" type="ros_pytest_runner" />
+</launch>

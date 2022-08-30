@@ -1,0 +1,5 @@
+string shift
+bool motor_error
+bool motor_operational
+bool steering_operational
+bool remote_takeover

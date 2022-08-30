@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="start_pt" default= '-2.87312459946, -2.86331605911, -0.6725, 0'/>
+    <arg name="use_rviz" default="true"/>
+    <arg name="use_matplotlib" default="false"/>
+    <arg name="map_file" default="$(find svea_core)/src/scripts/maps/floor2.simplemap" />
+    <arg name="ctrl_input" default="mouse"/>
+    <arg name="eval_type" default="test"/>
+
+    <arg name="mouse_vel" default="mouse_vel"/>
+    <arg name="holonomic" default="false"/>
+    <arg name="plot" default="false"/>
+
+    <arg name="latency" default="0.3"/>
+
+    <group if="$(eval use_rviz == true)">
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find svea_core)/src/scripts/rviz/SVEA_ab_twinteleop.rviz" />
+    </group>
+
+    <node pkg="mrpt_map" type="map_server_node" name="map_server_node" output="screen">
+        <param name="debug" value="false"/>
+        <param name="frame_id" value="map"/>
+        <param name="frequency" value="1"/>
+        <param name="ini_file" value="$(find svea_sensors)/params/mrpt/pf_localization.ini"/>
+        <param name="map_file" value="$(arg map_file)"/>
+    </node>
+
+    <!--
+    <node pkg="svea_core" type="telerobot_module.py" name="telerobot_module" output="screen">
+        <param name="start_pt" value="$(arg start_pt)"/>
+        <param name="use_rviz" value="$(arg use_rviz)"/>
+        <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
+    </node>
+    -->
+
+    <node pkg="svea_core" type="control_tower_module_eval.py" name="control_tower_module" output="screen">
+        <param name="start_pt" value="$(arg start_pt)"/>
+        <param name="use_rviz" value="$(arg use_rviz)"/>
+        <param name="use_matplotlib" value="$(arg use_matplotlib)"/>
+        <param name="ctrl_input" value="$(arg ctrl_input)"/>
+        <param name="latency" value="$(arg latency)"/>
+        <param name="eval_type" value="$(arg eval_type)"/>
+    </node>
+
+    <node pkg="svea_core" type="eval_logger.py" name="eval_logger" output="screen">
+        <param name="ctrl_input" value="$(arg ctrl_input)"/>
+        <param name="latency" value="$(arg latency)"/>
+        <param name="eval_type" value="$(arg eval_type)"/>
+    </node>
+    <!--path planning-->
+    <!--
+    <node pkg="svea_core" type="genetic_path_planner.py" name="path_planner" output="screen"/>
+    -->
+    <!--key teleop-->
+
+    <node pkg="key_teleop" type="key_teleop.py" name="teleop" output="screen" launch-prefix="xterm -e" if="$(eval ctrl_input == 'key')"/>
+
+
+    <!--mouse teleop-->
+
+    <node pkg="mouse_teleop" type="mouse_teleop.py" name="mouse_teleop" if="$(eval ctrl_input == 'mouse')">
+        <rosparam file="$(find mouse_teleop)/config/mouse_teleop.yaml" command="load"/>
+        <param name="holonomic" value="$(arg holonomic)"/>
+        <remap from="mouse_vel" to="$(arg mouse_vel)"/>
+    </node>
+
+    <group if="$(arg plot)">
+        <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot"
+        args="$(arg mouse_vel)/linear/x $(arg mouse_vel)/linear/y $(arg mouse_vel)/angular/z"/>
+    </group>
+
+</launch>

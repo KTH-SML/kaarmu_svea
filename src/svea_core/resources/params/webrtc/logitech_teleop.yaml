@@ -1,0 +1,9 @@
+# subscribers will get a namespace added in the generated topic.
+# e.g. clicked_point becomes /webrtc_sender/clicked_point
+webrtc_subscribers: {
+}
+# publishers will get a namespace added in the generated topic.
+# e.g. clicked_point becomes /webrtc_receiver/clicked_point
+webrtc_publishers: {
+    logitech_drive_cmd: "logitech_wheel_msgs/LogitechWheelCmd",
+}

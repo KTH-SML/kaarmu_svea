@@ -1,0 +1,9 @@
+string vehicle_id
+nav_msgs/Path path 
+geometry_msgs/Pose pose
+float32 speed
+bool com_status
+int8 relation
+string platoon_id
+string leader_id
+int8 order_in_platoon

@@ -1,0 +1,35 @@
+#! /bin/bash
+#
+# This entrypoint script will be called everytime a container is started.
+#
+# Author: Kaj Munhoz Arfvidsson
+
+set -e
+
+# Set ROS_IP etc. for e.g. rviz remote connection
+source util/remote_ros.sh
+
+# Install any dependencies that has been added by volume...
+
+if [ -f requirements.txt ]; then
+    # https://pip.pypa.io/en/stable/reference/requirement-specifiers/
+    python -m pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
+fi
+
+rosdep install \
+    --rosdistro melodic \
+    --from-paths src \
+    --ignore-src \
+    -q -r -y \
+
+# To build anything that has been added by volume...
+catkin build
+
+# https://github.com/osrf/docker_images/issues/114
+SETUP=$PWD/devel/setup.bash
+source "$SETUP"
+printf "\nsource '$SETUP'" >> $HOME/.bashrc
+
+exec "$@"
+

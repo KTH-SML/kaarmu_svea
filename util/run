@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Create, start and run a command inside a container
+#
+# This command assume it is executed on the SVEA hardware. This command should
+# primarily be used for launching/deploying SVEAs, i.e. not development. It is
+# almost identical to util/create, except some added options specific to using
+# SVEA hardware.
+#
+# OBS: This script does not have a default image, it must be explicitly given.
+#
+# OBS: The container will be removed once exited.
+#
+# Example:
+# > util/run svea roslaunch my_pkg file.launch param:=true
+#
+# Author: Kaj Munhoz Arfvidsson
+
+
+. "$(dirname "$0")/config.sh"
+
+
+# Build command
+cmd="docker run"
+cmd="$cmd -it"
+cmd="$cmd -e TERM=xterm-256color"
+cmd="$cmd -v /dev:/dev"
+cmd="$cmd -v $REPOSITORY_PATH/src:$WORKSPACE/src"
+cmd="$cmd --rm"
+cmd="$cmd --network host"
+cmd="$cmd --privileged"
+cmd="$cmd $*"
+
+if [ "$UTIL_DEBUG" ]; then
+    echo "# Executing..."
+    echo "$cmd"
+fi
+
+exec "$cmd"
