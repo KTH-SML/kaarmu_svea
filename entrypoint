@@ -32,5 +32,17 @@ SETUP=$PWD/devel/setup.bash
 source "$SETUP"
 printf "\nsource '$SETUP'" >> $HOME/.bashrc
 
+
+# Special for this project
+
+source util/fix-python.sh
+
+if [ -z $(which node) ]; then
+    curl https://deb.nodesource.com/setup_16.x | bash
+    apt-get install -y nodejs
+    npm install --global yarn
+    (cd src/ros_abconnect/streamer ; yarn install)
+fi
+
 exec "$@"
 
