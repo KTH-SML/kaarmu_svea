@@ -2,6 +2,7 @@
 Adapted from Atsushi Sakai's PythonRobotics pure pursuit example
 """
 import math
+from numpy import inf, clip, inf
 
 class PurePursuitController(object):
 
@@ -86,6 +87,11 @@ class PurePursuitSpeedController(object):
     K_i = 0.2  # speed control integral gain
     L = 0.324  # [m] wheel base of vehicle
 
+    limit = 1
+    K = 0.8
+    Ti = 10
+    Ta = inf
+
     def __init__(self, vehicle_name='', dt=0.01):
         self.vehicle_name = vehicle_name
         self.dt = dt
@@ -98,6 +104,7 @@ class PurePursuitSpeedController(object):
         self.error_sum = 0.0
         self.last_index = 0
         self.is_finished = False
+        self.reset()
 
     def compute_control(self, state, target=None):
         steering = self.compute_steering(state, target)
@@ -125,11 +132,36 @@ class PurePursuitSpeedController(object):
         else:
             # speed control
             error = self.target_velocity - state.v
-            self.error_sum += error * self.dt
-            P = error * self.K_p
-            I = self.error_sum * self.K_i
-            correction = P + I
-            return self.target_velocity + correction
+            u = self.update(error)
+            return u
+            #self.error_sum += 
+            #P = error * self.K_p
+            #I = self.error_sum * self.K_i
+            #correction = P + I
+            #return correction
+
+    def update(self, error):
+        self.output = self._P(error) + self._I(error) 
+        self.error = error
+        return self.clip(self.output)
+        
+    def _P(self, error):
+        return self.K * error
+
+    def _I(self, error):
+        anti_windup = self.clip(self.output) - self.output
+        self.I_kh += self.K * self.dt * \
+            (1 / self.Ti * error + 1 / self.Ta * anti_windup)
+        return self.I_kh
+
+
+    def clip(self, output):
+        return clip(output, 0, self.limit)
+
+    def reset(self):
+        self.error = 0
+        self.output = 0
+        self.I_kh = 0  # the error sum up to time step kh
 
     def find_target(self, state):
         ind = self._calc_target_index(state)

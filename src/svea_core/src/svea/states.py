@@ -9,7 +9,6 @@ TODO:
 import math
 import rospy
 import numpy as np
-from tf.transformations import quaternion_from_euler
 from geometry_msgs.msg import Pose, PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseWithCovariance, PoseStamped
 from geometry_msgs.msg import TwistWithCovarianceStamped
@@ -22,6 +21,16 @@ __maintainer__ = "Tobias Bolin"
 __email__ = "tbolin@kth.se"
 __status__ = "Development"
 
+def euler_to_quaternion(yaw, pitch, roll):
+    qx = np.sin(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) - \
+        np.cos(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+    qy = np.cos(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2) + \
+        np.sin(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2)
+    qz = np.cos(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2) - \
+        np.sin(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2)
+    qw = np.cos(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) + \
+        np.sin(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+    return [qx, qy, qz, qw]
 
 class VehicleState(object):
     """
@@ -262,7 +271,7 @@ class VehicleState(object):
             pose = self._pose_msg.pose
             pose.pose.position.x = self.x
             pose.pose.position.y = self.y
-            q_x, q_y, q_z, q_w = quaternion_from_euler(0.0, 0.0, self.yaw)
+            q_x, q_y, q_z, q_w = euler_to_quaternion(self.yaw, 0.0, 0.0)
             pose.pose.orientation.x = q_x
             pose.pose.orientation.y = q_y
             pose.pose.orientation.z = q_z

@@ -14,7 +14,6 @@ import math
 import matplotlib.pyplot as plt
 import rospy
 
-import tf
 from geometry_msgs.msg import Point, Point32, PolygonStamped, PointStamped
 from geometry_msgs.msg import Pose, PoseStamped, PoseArray
 from nav_msgs.msg import Path
@@ -27,6 +26,16 @@ __maintainer__ = "Frank Jiang, Javier Cerna"
 __email__ = "frankji@kth.se"
 __status__ = "Development"
 
+def euler_to_quaternion(yaw, pitch, roll):
+    qx = np.sin(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) - \
+        np.cos(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+    qy = np.cos(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2) + \
+        np.sin(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2)
+    qz = np.cos(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2) - \
+        np.sin(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2)
+    qw = np.cos(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) + \
+        np.sin(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+    return [qx, qy, qz, qw]
 
 ############################
 ## VEHICLE VIZUALIZATIONS ##
@@ -173,7 +182,7 @@ def publish_3Dcar(polygon_publisher, pose_publisher, x, y, yaw):
     car_poly.polygon.points = pts
 
     # load odometry
-    quat = tf.transformations.quaternion_from_euler(0.0, 0.0, yaw)
+    quat = euler_to_quaternion(yaw, 0., 0.)
 
     car_pose = PoseStamped()
     car_pose.header.stamp = rospy.Time.now()
@@ -206,7 +215,7 @@ def lists_to_pose_stampeds(x_list, y_list, yaw_list=None, t_list=None):
 
         if not yaw_list is None:
             yaw = yaw_list[i]
-            quat = tf.transformations.quaternion_from_euler(0.0, 0.0, yaw)
+            quat = euler_to_quaternion(yaw, 0., 0.)
             curr_pose.pose.orientation.x = quat[0]
             curr_pose.pose.orientation.y = quat[1]
             curr_pose.pose.orientation.z = quat[2]
@@ -233,7 +242,7 @@ def lists_to_poses(x_list, y_list, yaw_list=None):
 
         if not yaw_list is None:
             yaw = yaw_list[i]
-            quat = tf.transformations.quaternion_from_euler(0.0, 0.0, yaw)
+            quat = euler_to_quaternion(yaw, 0., 0.)
             curr_pose.orientation.x = quat[0]
             curr_pose.orientation.y = quat[1]
             curr_pose.orientation.z = quat[2]
