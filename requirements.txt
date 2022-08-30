@@ -1,0 +1,3 @@
+rosonic         ; python_version >= '3.6'
+dataclasses     ; python_version >= '3.6'
+casadi          ; python_version >= '3.6'
