@@ -14,7 +14,9 @@ remote_ros() { source util/remote_ros.sh; }; remote_ros
 
 if [ -f requirements.txt ]; then
     # https://pip.pypa.io/en/stable/reference/requirement-specifiers/
+    echo "# python -m pip install -r requirements.txt"
     python -m pip install -r requirements.txt
+    echo "# python3 -m pip install -r requirements.txt"
     python3 -m pip install -r requirements.txt
 fi
 

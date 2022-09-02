@@ -91,6 +91,8 @@ RUN cp -f $WORKSPACE/entrypoint /ros_entrypoint.sh && \
         python3-catkin-tools \
         python3-rospkg-modules \
         && \
+    python -m pip install -U pip && \
+    python3 -m pip install -U pip && \
     rosdep update \
         --rosdistro $ROSDISTRO \
         && \
