@@ -83,11 +83,13 @@ RUN cp -f $WORKSPACE/entrypoint /ros_entrypoint.sh && \
         python-pip \
         python-numpy \
         python-matplotlib \
+        python-scipy \
         python-tk \
         python3-pip \
         python3-numpy \
         python3-tk \
         python3-matplotlib \
+        python3-scipy \
         python3-catkin-tools \
         python3-rospkg-modules \
         && \

@@ -48,5 +48,9 @@ if [ -z $(which node) ]; then
     (cd src/ros_abconnect/streamer ; yarn install)
 fi
 
+if [ "$(uname -m)" = "aarch64" ]; then
+    export OPENBLAS_CORETYPE=ARMV8
+fi
+
 exec "$@"
 
