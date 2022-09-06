@@ -4,3 +4,6 @@
 [submodule "src/aliencontrol"]
 	path = src/aliencontrol
 	url = https://github.com/kth-sml/aliencontrol
+[submodule "src/rsu_core"]
+	path = src/rsu_core
+	url = https://github.com/kth-sml/rsu_core
