@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Options -->
+    <arg name="use_cuda"        default="true"/>
+
+    <!-- Consumed topics -->
+    <arg name="image"           default="image"/>
+    <arg name="depth_image"     default="depth_image"/>
+
+    <!-- Produced topics -->
+    <arg name="object_markers"  default="object_markers"/>
+
+    <!-- Auxiliary -->
+    <arg name="max_age"         default="30"/>
+    <arg name="cfg_path"        default="$(find rsu_core)/data/yolov4-tiny.cfg"/>
+    <arg name="weights_path"    default="$(find rsu_core)/data/yolov4-tiny.weights"/>
+    <arg name="labels_path"     default="$(find rsu_core)/data/coco.names"/>
+
+
+    <!-- Nodes -->
+
+    <include ns="rsu" file="$(find rsu_core)/launch/object_pose.launch">
+        <!-- Options -->
+        <arg name="use_cuda"        	value="$(arg use_cuda)"/>
+        <arg name="enable_bbox_image"  	value="true"/>
+        <!-- Consumed topics -->
+        <arg name="image"           	value="$(arg image)"/>
+        <arg name="depth_image"     	value="$(arg depth_image)"/>
+        <!-- Auxiliary -->
+        <arg name="max_age"         	value="$(arg max_age)"/>
+        <arg name="cfg_path"        	value="$(arg cfg_path)"/>
+        <arg name="weights_path"    	value="$(arg weights_path)"/>
+        <arg name="labels_path"     	value="$(arg labels_path)"/>
+    </include>
+
+    <node name="object_viz" pkg="rsu_core" type="object_viz.py" output="screen">
+        <!-- Consumed topics -->
+        <param name="objectposes"       value="rsu/objectposes"/>
+        <!-- Produced topics -->
+        <param name="object_markers"    value="$(arg object_markers)"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz"/>
+
+</launch>
