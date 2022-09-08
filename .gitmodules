@@ -4,6 +4,6 @@
 [submodule "src/aliencontrol"]
 	path = src/aliencontrol
 	url = https://github.com/kth-sml/aliencontrol
-[submodule "src/rsu_core"]
-	path = src/rsu_core
-	url = https://github.com/kth-sml/rsu_core
+[submodule "src/zed-ros-wrapper"]
+	path = src/zed-ros-wrapper
+	url = https://github.com/stereolabs/zed-ros-wrapper

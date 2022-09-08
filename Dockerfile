@@ -54,10 +54,33 @@ RUN apt-get update -y && \
 ## SVEA BASE IMAGE ##
 #####################
 
-FROM ros:$ROSDISTRO
+FROM dustynv/ros:$ROSDISTRO-ros-base-l4t-r32.7.1
 
 ARG ROSDISTRO
 ARG WORKSPACE
+
+## Install ZED SDK
+
+#This environment variable is needed to use the streaming features on Jetson inside a container
+ARG DEBIAN_FRONTEND noninteractive
+RUN apt-get update -y && apt-get install --no-install-recommends lsb-release wget less udev sudo apt-transport-https -y && \
+    wget -q --no-check-certificate -O ZED_SDK_Linux_JP.run https://download.stereolabs.com/zedsdk/3.7/l4t32.7/jetsons && \
+    chmod +x ZED_SDK_Linux_JP.run ; ./ZED_SDK_Linux_JP.run silent runtime_only && \
+    rm -rf /usr/local/zed/resources/* \
+    rm -rf ZED_SDK_Linux_JP.run && \
+    rm -rf /var/lib/apt/lists/*
+
+# ZED Python API
+RUN apt-get update -y && apt-get install --no-install-recommends python3 python3-pip python3-dev python3-setuptools build-essential -y && \ 
+    wget download.stereolabs.com/zedsdk/pyzed -O /usr/local/zed/get_python_api.py && \
+    python3 /usr/local/zed/get_python_api.py && \
+    python3 -m pip install cython wheel && \
+    python3 -m pip install numpy *.whl && \
+    apt-get remove --purge build-essential python3-dev -y && apt-get autoremove -y && \
+    rm *.whl ; rm -rf /var/lib/apt/lists/*
+
+# This symbolic link is needed to use the streaming features on Jetson inside a container
+RUN ln -sf /usr/lib/aarch64-linux-gnu/tegra/libv4l2.so.0 /usr/lib/aarch64-linux-gnu/libv4l2.so
 
 ## Use supporting images for multi-stage build
 
@@ -73,7 +96,6 @@ WORKDIR $WORKSPACE
 
 ## Install dependencies
 
-ARG DEBIAN_FRONTEND=noninteractive
 RUN cp -f $WORKSPACE/entrypoint /ros_entrypoint.sh && \
     apt-get update -y && \
     apt-get upgrade -y && \
