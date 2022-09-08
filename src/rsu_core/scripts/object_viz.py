@@ -64,5 +64,5 @@ if __name__ == '__main__':
 
     ##  Start node  ##
 
-    object_viz.run()
+    object_viz()
 

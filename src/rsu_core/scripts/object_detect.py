@@ -239,5 +239,5 @@ if __name__ == '__main__':
 
     ##  Start node  ##
 
-    object_detect.run()
+    object_detect()
 

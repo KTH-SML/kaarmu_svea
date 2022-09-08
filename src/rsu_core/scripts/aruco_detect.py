@@ -123,5 +123,5 @@ if __name__ == '__main__':
 
     ##  Start node  ##
 
-    aruco_detect.run()
+    aruco_detect()
 

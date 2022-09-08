@@ -131,4 +131,4 @@ if __name__ == '__main__':
 
     ##  Start node  ##
 
-    object_pose.run()
+    object_pose()

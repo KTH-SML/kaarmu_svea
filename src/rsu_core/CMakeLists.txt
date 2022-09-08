@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   image_geometry
   rospy
-  rosonic
   rsu_msgs
   sensor_msgs
   tf2

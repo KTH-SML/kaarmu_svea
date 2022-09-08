@@ -24,7 +24,6 @@
   <depend>python3-opencv</depend>
   <depend>python3-scipy</depend>
   <depend>rospy</depend>
-  <depend>rosonic</depend>
   <depend>rsu_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
