@@ -6,7 +6,7 @@
     <arg name="is_sim"  default="false"/>
 
     <!-- Launch file constants -->
-    <arg name="map_file" value="$(find city_lmpc)/resources/maps/map.yaml" />
+    <arg name="map_file" value="$(find svea_core)/maps/sml.yaml" />
 
     <!-- Start ABConnect -->
     <include file="$(find ros_abconnect)/launch/abconnect.launch">

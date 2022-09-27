@@ -5,7 +5,7 @@
     <arg name="name"        default="rsu"/>
 
     <!-- Launch file constants -->
-    <arg name="map_file"    value="$(find city_lmpc)/resources/maps/map.yaml" />
+    <arg name="map_file"    value="$(find svea_core)/maps/sml.yaml" />
 
     <!-- Publish map -->
     <node name="map_server" pkg="map_server" type="map_server"
