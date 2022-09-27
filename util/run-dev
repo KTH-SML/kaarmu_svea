@@ -23,7 +23,7 @@ isone DESKTOP && ! isone DEBUG && xhost +local:docker
 
 isone DEBUG && fn="echo" || fn="exec"
 
-"$fn" docker create \
+"$fn" docker run \
     -it \
     -e "TERM=xterm-256color" \
     -e "DISPLAY" \
