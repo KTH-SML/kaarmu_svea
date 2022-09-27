@@ -156,7 +156,6 @@ class svea(Node):
         # Compute control using path tracking MPC
         self.controller.target_velocity = self.target_velocity
         steering, velocity = self.controller.compute_control(self.state, self.target)
-        transmission = 0
 
         # Build control signal to SVEA
         if self.target_velocity > 0.1:
@@ -164,13 +163,13 @@ class svea(Node):
                     steering=steering,
                     velocity=velocity,
                     brake_force=0,
-                    transmission=transmission,
+                    transmission=0,
                     differential_front=0,
                     differential_rear=0,
                 )
 
         # Handle the publishing of RVIZ topics
-        self.rviz.log_ctrl(steering, velocity, transmission, rospy.get_time())
+        self.rviz.log_ctrl(steering, velocity, rospy.get_time())
         self.rviz.log_state(self.state)
         self.rviz.update_target(self.target)
         self.rviz.visualize_data()

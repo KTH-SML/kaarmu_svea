@@ -13,6 +13,7 @@
         <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
         <arg name="name"        value="$(arg name)"/>
         <arg name="category"    value="car"/>
+        <arg name="start_delay" value="2"/>
     </include>
 
     <!-- Set namespace -->
@@ -21,6 +22,9 @@
         <!-- On-Hardware -->
         <group unless="$(arg is_sim)">
 
+            <!-- Start map server -->
+            <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" output="screen"/>
+
             <!-- Start low-level interface -->
             <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
                 <param name="port" value="/dev/ttyACM0"/>
@@ -28,10 +32,7 @@
             </node>
 
             <!-- Start localization -->
-            <include file="$(find svea_sensors)/launch/localize.launch">
-                <arg name="use_rs" value="true"/>
-                <arg name="file_name" value="$(arg map_file)"/>
-            </include>
+	    <include file="$(find svea_sensors)/launch/localize.launch"/>
 
         </group>
 
