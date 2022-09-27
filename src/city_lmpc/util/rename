@@ -1,0 +1,22 @@
+#! /bin/sh
+#
+# Rename the package to something else.
+#
+# Author: Kaj Munhoz Arfvidsson
+
+
+. "$(dirname "$0")/config.sh"
+
+
+test -z "$1" && echo 'error: Missing name' && echo 'usage: rename <name>' && exit 1
+
+sed -i "s/city_lmpc/$1/g" \
+    "$REPOSITORY_PATH/util/rename" \
+    "$REPOSITORY_PATH/setup.py" \
+    "$REPOSITORY_PATH/src/city_lmpc/__init__.py" \
+    "$REPOSITORY_PATH/CMakeLists.txt" \
+    "$REPOSITORY_PATH/package.xml" \
+    "$REPOSITORY_PATH/README.md"
+
+mv "$REPOSITORY_PATH/src/city_lmpc" "$REPOSITORY_PATH/src/$1"
+

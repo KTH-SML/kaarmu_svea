@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file constants -->
+    <arg name="map_file" value="$(find svea_core)/resources/maps/floor2.yaml" />
+
+    <!-- Publish map -->
+    <node name="map_server" pkg="map_server" type="map_server"
+          args="$(arg map_file)" 
+          output="screen" />
+
+    <!-- Start SVEA1 -->
+    <node ns="svea1" name="svea1" pkg="city_lmpc" type="svea_sim.py" output="screen">
+        <rosparam>
+            name: svea1
+            x0: [-0.848, -4.969, 0, -2.14]
+            pub_to_rviz: true
+        </rosparam>
+    </node>
+
+    <!-- Start SVEA2 -->
+    <node ns="svea2" name="svea2" pkg="city_lmpc" type="svea_sim.py" output="screen">
+        <rosparam>
+            name: svea2
+            x0: [-0.200, -3.900, 0, -2.14]
+            pub_to_rviz: true
+        </rosparam>
+    </node>
+   
+    <!-- Start RSU -->
+    <node ns="rsu" name="rsu" pkg="city_lmpc" type="rsu_sim.py" output="screen">
+        <rosparam>
+            track: arcs 
+            veh_cfg:
+            - [svea1, true]
+            - [svea2, true]
+            pub_to_rviz: true 
+        </rosparam>
+    </node>
+
+</launch>
+

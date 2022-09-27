@@ -1,0 +1,4 @@
+#! /bin/sh
+# This script is the docker entrypoint for this package, it will in turn call SVEA's entrypoint.
+
+exec $WORKSPACE/entrypoint "$@"

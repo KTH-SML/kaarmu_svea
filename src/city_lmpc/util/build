@@ -1,0 +1,29 @@
+#! /bin/sh
+#
+# Build the image for this workspace
+#
+# Author: Kaj Munhoz Arfvidsson
+
+
+. "$(dirname "$0")/config.sh"
+
+
+# Set default arguments
+if [ -z "$*" ]
+then set -- -t "$IMAGE_TAG" "$BUILD_CONTEXT"
+fi
+
+# Build command
+cmd="docker build"
+cmd="$cmd --network host"
+cmd="$cmd --build-arg ROSDISTRO=$ROSDISTRO"
+cmd="$cmd --build-arg WORKSPACE=$WORKSPACE"
+cmd="$cmd $*"
+
+if [ "$UTIL_DEBUG" ]; then
+    echo "# Executing..."
+    echo "$cmd"
+fi
+
+exec $cmd
+

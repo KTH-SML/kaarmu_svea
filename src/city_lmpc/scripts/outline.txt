@@ -1,0 +1,115 @@
+# Terminology
+
+(src)-[topic]->(dst)
+
+A subscriber will be created at `<src>` listening to `<topic>`
+A publisher will be created at `<dst>` advertising on `/abconnect/<src>/<topic>`
+
+---
+# Templates
+
+(veh)-[]->(rsu)
+(rsu)-[]->(veh)
+
+---
+# Existing topics
+
+## State of a vehicle
+```
+(veh)-[state]->(rsu)
+    src: /state
+    dst: /abconnect/veh/state
+```
+
+## Send command to RSU
+```
+(veh)-[rsu/command]->(rsu)
+    src: /rsu/command
+    dst: /abconnect/veh/rsu/command
+```
+
+## Send command to the vehicle
+```
+(rsu)-[veh/command]->(veh)
+    src: /veh/command
+    dst: /abconnect/rsu/veh/command
+```
+
+## Send target to vehicle
+```
+(rsu)-[veh/target]->(veh)
+    src: /veh/target
+    dst: /abconnect/rsu/veh/target
+```
+
+---
+# Outline
+
+- (veh) "Setup"
+    - Open `(obs)-[rsu/command]->(rsu)`
+    - Open `(ego)-[rsu/command]->(rsu)`
+    - Open `(onc)-[rsu/command]->(rsu)`
+
+- (rsu) "Setup"
+    - Open `(obs)-[rsu/command]->(rsu)`
+    - Open `(ego)-[rsu/command]->(rsu)`
+    - Open `(onc)-[rsu/command]->(rsu)`
+
+- (veh) "Init connection"
+    - Open `(rsu)-[veh/command]->(veh)` to allow RSU commanding vehicle
+    - Publish "connect" to `rsu/command` which is already open
+    - Wait for `/abconnect/rsu/veh/command` to know RSU is connected
+        - Confirm it contains "connect"
+    - Open topics expected when "connected"
+        - `(veh)-[state]->(rsu)`
+
+- (rsu) "At connection event from veh"
+    - Create "vehicle" object for veh
+        - Open `(rsu)-[veh/command]->(veh)` to command vehicle
+        - Publish "connect" to `veh/command` tell vehicle RSU is connected
+        - Open topics expected when "connected"
+            - `(veh)-[state]->(rsu)`
+
+- (veh) "Hand over control to infrastructure"
+    - Open `(rsu)-[veh/target]->(veh)`
+    - Publish "request guidance" to `rsu/command`
+    - Wait for `/abconnect/rsu/veh/target`
+
+- (rsu) "At hand over event from veh"
+    - Open `(rsu)-[veh/target]->(veh)`
+    - Create trajectory for veh
+    - Update `vehicle.spin`
+        - Publish point to `veh/target`
+
+---
+# Topic ids
+
+There will be 3 times the following topics...
+0. (veh)-[state]->(rsu)
+1. (veh)-[rsu/command]->(rsu)
+2. (rsu)-[veh/command]->(veh)
+3. (rsu)-[veh/target]->(veh)
+
+Let we give the three vehicles their own deca
+- obs: 10-19
+- ego: 20-29
+- onc: 30-39
+
+That means...
+
+10. (obs)-[state]->(rsu)
+11. (obs)-[rsu/command]->(rsu)
+12. (rsu)-[obs/command]->(obs)
+13. (rsu)-[obs/target]->(obs)
+
+20. (ego)-[state]->(rsu)
+21. (ego)-[rsu/command]->(rsu)
+22. (rsu)-[ego/command]->(ego)
+23. (rsu)-[ego/target]->(ego)
+
+30. (onc)-[state]->(rsu)
+31. (onc)-[rsu/command]->(rsu)
+32. (rsu)-[onc/command]->(onc)
+33. (rsu)-[onc/target]->(onc)
+
+

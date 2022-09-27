@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file constants -->
+    <arg name="map_file" value="$(find svea_core)/resources/maps/floor2.yaml" />
+
+    <!-- Publish map -->
+    <node name="map_server" pkg="map_server" type="map_server"
+          args="$(arg map_file)"
+          output="screen" />
+
+    <!-- Start OBS -->
+    <node ns="obs" name="obs" pkg="city_lmpc" type="svea_sim.py" output="screen">
+        <rosparam>
+            name: obs
+            x0: [6.8, 7, 0, -2.23]
+        </rosparam>
+    </node>
+
+    <!-- Start EGO -->
+    <node ns="ego" name="ego" pkg="city_lmpc" type="svea_sim.py" output="screen">
+        <rosparam>
+            name: ego
+            x0: [7.55, 8.35, 0, -2.23]
+        </rosparam>
+    </node>
+
+    <!-- Start ONC -->
+    <node ns="onc" name="onc" pkg="city_lmpc" type="svea_sim.py" output="screen">
+        <rosparam>
+            name: onc
+            x0: [-1.8, 2.8, 0, 1.05]
+        </rosparam>
+    </node>
+
+    <!-- Start Geofencing OBS -->
+    <node name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
+        <rosparam>
+            box: [2.2, 5.7, 3.0, 5.8]
+            state: /obs/state
+            trigger: /rsu/geofence
+        </rosparam>
+    </node>
+
+    <!-- Start RSU -->
+    <node ns="rsu" name="rsu" pkg="city_lmpc" type="rsu_sim.py" output="screen">
+        <rosparam subst_value="true" >
+            demo_scenario: 1
+            track: arcs
+            s0: [7.35, 7.35, -2.15]
+            vehicles:
+            - [obs, true]
+            - [ego, true]
+            - [onc, false]
+        </rosparam>
+    </node>
+
+</launch>
+

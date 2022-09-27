@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="is_sim" default="true"/>
+    <arg name="use_bicycle" default="true"/>
+    <arg name="use_rviz" default="false"/>
+    <arg name="pub_to_rviz" default="true" />
+
+    <!-- Launch file constants -->
+    <arg name="map_file" value="$(find svea_core)/resources/maps/floor2.yaml" />
+
+    <!-- Publish map -->
+    <node if="$(arg is_sim)"  
+	  name="map_server" pkg="map_server" type="map_server"
+	  args="$(arg map_file)" output="screen" />
+
+    <!-- Start ros_abconnect -->
+    <include file="$(find ros_abconnect)/launch/abconnect.launch">
+        <arg name="host" value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
+        <arg name="name" value="svea55"/>
+        <arg name="category" value="car"/>
+    </include>
+    <node name="svea_5__state" pkg="ros_abconnect" type="add_topic.py" output="screen">
+        <rosparam>{action: "publish", id: "rsu", topic: 0, name: "/svea5/state", type: "svea_msgs/VehicleState"}</rosparam>
+    </node>
+    <node name="rsu__track" pkg="ros_abconnect" type="add_topic.py" output="screen">
+	<rosparam>{action: "subscribe", id: "rsu", topic: 1, name: "/rsu/track", type: "std_msgs/String"}</rosparam>
+    </node>
+
+    <group unless="$(arg is_sim)">
+        <!-- Start low-level interface -->
+        <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+            <param name="port" value="/dev/ttyACM0"/>
+            <param name="baud" value="250000"/>
+        </node>
+
+        <!-- Start localization -->
+        <include file="$(find svea_sensors)/launch/localize.launch">
+            <arg name="use_rs" value="true"/>
+            <arg name="file_name" value="$(arg map_file)"/>
+        </include>
+
+        <node name="track_bicycle_remote" pkg="city_lmpc" type="track_remote.py" output="screen" if="$(arg use_bicycle)">
+            <param name="pub_to_rviz" value="$(arg pub_to_rviz)"/>
+            <param name="is_sim" value="$(arg is_sim)"/>
+        </node>
+        <node name="track_frenet_real" pkg="city_lmpc" type="track_frenet_real.py" output="screen" unless="$(arg use_bicycle)">
+            <param name="pub_to_rviz" value="$(arg pub_to_rviz)"/>
+            <param name="is_sim" value="$(arg is_sim)"/>
+        </node>
+    </group>
+
+    <!-- Start RViz -->
+    <node if="$(eval use_rviz)" name="rviz" pkg="rviz" type="rviz"
+    	  args="-d $(find city_lmpc)/resources/rviz/SVEA_floor2.rviz" />
+
+    <!-- Start track_frenet_sim -->
+    <node if="$(eval is_sim and use_bicycle)" name="track_bicycle_sim" pkg="city_lmpc" type="track_bicycle_sim.py" output="screen">
+        <param name="pub_to_rviz" value="$(arg pub_to_rviz)"/>
+        <param name="is_sim" value="$(arg is_sim)"/>
+    </node>
+    <node if="$(eval is_sim and not use_bicycle)" name="track_frenet_sim" pkg="city_lmpc" type="track_frenet_sim.py" output="screen">
+        <param name="pub_to_rviz" value="$(arg pub_to_rviz)"/>
+        <param name="is_sim" value="$(arg is_sim)"/>
+    </node>
+
+
+
+
+</launch>
+

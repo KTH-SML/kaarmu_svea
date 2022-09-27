@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="name"    default="$(optenv DEMONAME svea)"/>
+    <arg name="is_sim"  default="false"/>
+
+    <!-- Launch file constants -->
+    <arg name="map_file" value="$(find city_lmpc)/resources/maps/map.yaml" />
+
+    <!-- Start ABConnect -->
+    <include file="$(find ros_abconnect)/launch/abconnect.launch">
+        <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
+        <arg name="name"        value="$(arg name)"/>
+        <arg name="category"    value="car"/>
+    </include>
+
+    <!-- Set namespace -->
+    <group ns="$(arg name)">
+
+        <!-- On-Hardware -->
+        <group unless="$(arg is_sim)">
+
+            <!-- Start low-level interface -->
+            <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+                <param name="port" value="/dev/ttyACM0"/>
+                <param name="baud" value="250000"/>
+            </node>
+
+            <!-- Start localization -->
+            <include file="$(find svea_sensors)/launch/localize.launch">
+                <arg name="use_rs" value="true"/>
+                <arg name="file_name" value="$(arg map_file)"/>
+            </include>
+
+        </group>
+
+        <!-- Start vehicle -->
+        <node name="$(arg name)" pkg="city_lmpc" type="svea_demo.py" output="screen">
+            <param name="name"      value="$(arg name)"/>
+            <param name="is_sim"    value="$(arg is_sim)"/>
+
+            <param if="$(eval name == 'obs')" type="yaml"
+                   name="x0" value="[-0.94, -5.35, 0, +1.90]"/>
+
+            <param if="$(eval name == 'ego')" type="yaml"
+                   name="x0" value="[-0.54, -6.33, 0, +1.90]"/>
+
+            <param if="$(eval name == 'onc')" type="yaml"
+                   name="x0" value="[+1.03, +0.41, 0, -1.21]"/>
+        </node>
+
+    </group>
+
+</launch>

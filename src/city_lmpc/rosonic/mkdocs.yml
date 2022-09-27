@@ -1,0 +1,14 @@
+site_name: rosonic
+theme: readthedocs
+nav:
+  - Home: index.md
+  - Motivation: motivation.md
+  - Get started: get-started.md
+markdown_extensions:
+  - smarty
+  - sane_lists
+  - admonition
+  - toc:
+      permalink: True
+# plugins:
+#   - with-pdf

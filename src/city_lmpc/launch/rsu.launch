@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="name"        default="rsu"/>
+
+    <!-- Launch file constants -->
+    <arg name="map_file"    value="$(find city_lmpc)/resources/maps/map.yaml" />
+
+    <!-- Publish map -->
+    <node name="map_server" pkg="map_server" type="map_server"
+          args="$(arg map_file)"
+          output="screen" />
+
+    <!-- Start ABConnect -->
+    <include file="$(find ros_abconnect)/launch/abconnect.launch">
+        <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
+        <arg name="name"        value="rsu"/>
+        <arg name="category"    value="video"/>
+    </include>
+
+    <!-- Start geofence for Start Area -->
+    <node ns="geofence_start" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
+        <rosparam>
+            box: [-1.57, -5.80, -0.57, -4.72]
+            state: /abconnect/obs/state
+            trigger: /geofence_start/trigger
+        </rosparam>
+    </node>
+
+    <!-- Start geofence for Crash Area -->
+    <node ns="geofence_crash" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
+        <rosparam>
+            box: [+0.40, -3.26, +1.60, -2.20]
+            state: /abconnect/obs/state
+            trigger: /geofence_crash/trigger
+        </rosparam>
+    </node>
+
+    <!-- Start RSU -->
+    <node ns="$(arg name)" name="$(arg name)" pkg="city_lmpc" type="rsu_demo.py" output="screen">
+        <rosparam subst_value="true" >
+            demo_scenario: 0
+            track: arcs
+            s0: [-1.27, -5.48, +1.90]
+            vehicle_list:
+            - [obs, true]
+            - [ego, true]
+            - [onc, false]
+        </rosparam>
+    </node>
+
+</launch>

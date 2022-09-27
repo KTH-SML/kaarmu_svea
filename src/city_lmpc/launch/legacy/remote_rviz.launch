@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Start RViz -->
+   <node name="rviz" pkg="rviz" type="rviz"
+    	  args="-d $(find city_lmpc)/resources/rviz/SVEA_floor2.rviz" />
+
+</launch>
+

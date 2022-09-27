@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>city_lmpc</name>
+  <version>0.0.0</version>
+  <description>The city_lmpc package</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <!-- Example:  -->
+  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
+  <maintainer email="musaj@kth.se">Mustafa Al-Janabi</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+
+  <author email="musaj@kth.se">Mustafa Al-Janabi</author>
+  <author email="kajarf@kth.se">Kaj Munhoz Arfvidsson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rospy</depend>
+  <depend>svea_core</depend>
+  <depend>python3-numpy</depend>
+  <depend>python3-matplotlib</depend>
+  <depend>python3-imageio</depend>
+  <depend>python3-tqdm</depend>
+  <depend>realsense2_camera</depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
+</package>
