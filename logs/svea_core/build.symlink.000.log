@@ -1,0 +1,4 @@
+Symlinking /ws/devel/share/svea_core/cmake/svea_coreConfig-version.cmake
+Symlinking /ws/devel/share/svea_core/cmake/svea_coreConfig.cmake
+Symlinking /ws/devel/lib/pkgconfig/svea_core.pc
+Symlinking /ws/devel/lib/python3/dist-packages/svea/__init__.py

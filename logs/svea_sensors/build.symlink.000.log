@@ -1,0 +1,5 @@
+Symlinking /ws/devel/share/svea_sensors/cmake/svea_sensorsConfig-version.cmake
+Symlinking /ws/devel/share/svea_sensors/cmake/svea_sensorsConfig.cmake
+Symlinking /ws/devel/lib/pkgconfig/svea_sensors.pc
+Symlinking /ws/devel/lib/svea_sensors/bno055_i2c_node
+Symlinking /ws/devel/lib/svea_sensors/odom_to_map

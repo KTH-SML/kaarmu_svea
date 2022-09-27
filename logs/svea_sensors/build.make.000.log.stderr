@@ -1,0 +1,16 @@
+[01m[K/ws/src/svea_sensors/src/svea_sensors/odom_to_map.cpp:[m[K In function ‘[01m[Ksvea_msgs::VehicleState stateFromOdom(const Odometry&)[m[K’:
+[01m[K/ws/src/svea_sensors/src/svea_sensors/odom_to_map.cpp:47:10:[m[K [01;31m[Kerror: [m[K‘[01m[KstateMsg[m[K’ was not declared in this scope; did you mean ‘[01m[Kstate_msg[m[K’?
+   47 |   return [01;31m[KstateMsg[m[K;
+      |          [01;31m[K^~~~~~~~[m[K
+      |          [32m[Kstate_msg[m[K
+[01m[K/ws/src/svea_sensors/src/svea_sensors/odom_to_map.cpp:[m[K In function ‘[01m[Kvoid odomCallback(const ConstPtr&)[m[K’:
+[01m[K/ws/src/svea_sensors/src/svea_sensors/odom_to_map.cpp:75:29:[m[K [01;31m[Kerror: [m[Kconversion from ‘[01m[Kconst ConstPtr[m[K’ {aka ‘[01m[Kconst boost::shared_ptr<const nav_msgs::Odometry_<std::allocator<void> > >[m[K’} to non-scalar type ‘[01m[Knav_msgs::Odometry[m[K’ {aka ‘[01m[Knav_msgs::Odometry_<std::allocator<void> >[m[K’} requested
+   75 |   nav_msgs::Odometry odom = [01;31m[Kmsg[m[K;
+      |                             [01;31m[K^~~[m[K
+[01m[K/ws/src/svea_sensors/src/svea_sensors/odom_to_map.cpp:88:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom_msg[m[K’ was not declared in this scope; did you mean ‘[01m[Kodom_pose[m[K’?
+   88 |     pose_msg.header = [01;31m[Kodom_msg[m[K.header;
+      |                       [01;31m[K^~~~~~~~[m[K
+      |                       [32m[Kodom_pose[m[K
+make[2]: *** [CMakeFiles/odom_to_map.dir/build.make:63: CMakeFiles/odom_to_map.dir/src/svea_sensors/odom_to_map.cpp.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:777: CMakeFiles/odom_to_map.dir/all] Error 2
+make: *** [Makefile:141: all] Error 2

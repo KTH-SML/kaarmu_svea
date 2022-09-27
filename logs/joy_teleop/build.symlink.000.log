@@ -1,0 +1,3 @@
+Symlinking /ws/devel/share/joy_teleop/cmake/joy_teleopConfig.cmake
+Symlinking /ws/devel/share/joy_teleop/cmake/joy_teleopConfig-version.cmake
+Symlinking /ws/devel/lib/pkgconfig/joy_teleop.pc
