@@ -20,6 +20,9 @@ rosdep install \
     --ignore-src \
     -qry
 
+# Install node modules in ros_abconnect
+( cd src/ros_abconnect/streamer && yarn install )
+
 # To build anything that has been added by volume...
 catkin build
 
