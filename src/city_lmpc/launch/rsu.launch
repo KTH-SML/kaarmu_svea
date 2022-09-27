@@ -17,6 +17,7 @@
         <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
         <arg name="name"        value="rsu"/>
         <arg name="category"    value="video"/>
+        <arg name="start_delay" value="2"/>
     </include>
 
     <!-- Start geofence for Start Area -->
