@@ -151,6 +151,8 @@ add_executable(bno055_i2c_node
 #add_executable(speed_coefficient_estimation src/speed_coefficient_estimation.cpp)
 add_executable(odom_to_map
                src/svea_sensors/odom_to_map.cpp)
+add_executable(wheel_encoder
+               src/svea_sensors/wheel_encoder.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the followinsveag renames the
 ## target back to the shorter version for ease of user use
@@ -161,6 +163,7 @@ add_executable(odom_to_map
 ## same as for the library above
 #add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(odom_to_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wheel_encoder ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
@@ -168,6 +171,7 @@ add_dependencies(odom_to_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORT
 # )
 target_link_libraries(bno055_i2c_node ${catkin_LIBRARIES})
 target_link_libraries(odom_to_map ${catkin_LIBRARIES})
+target_link_libraries(wheel_encoder ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -198,7 +202,11 @@ install(TARGETS odom_to_map
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
+install(TARGETS wheel_encoder
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
