@@ -6,7 +6,7 @@
 #include <math.h>
 #include <ros/ros.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TwistWithCovarianceStamped.h>
 #include <svea_msgs/lli_encoder.h>
 
 /** Constants */
@@ -55,16 +55,14 @@ int direction = 1;
  */
 void encoderCallback(const svea_msgs::lli_encoder::ConstPtr& msg)
 {
-  double wheel_diam = TAU * wheel_radius;   // [m]
-  double time = msg.delta_time * MICRO;     // [s]
   // diam [m/rev] / ppr [tick/rev] * x [tick] / time [s]
   // v [m/s] = [m/rev] * [rev/tick] * [tick] * [1/s]
   //         = [m/s]
-  auto convert = [=](double x){ return wheel_diam / encoder_ppr * x / time; };
+  auto convert = [=](double x, double time){ return (TAU * wheel_radius) / encoder_ppr * x / time; };
 
   // Only one encoder working for now...
   // direction * (convert(msg.right_ticks) + convert(msg.left_ticks)) / 2;
-  vel.twist.twist.linear.x = direction * convert(msg.right_ticks);
+  vel.twist.twist.linear.x = direction * convert(msg->right_ticks, msg->right_time_delta);
 }
 
 /**
@@ -72,7 +70,7 @@ void encoderCallback(const svea_msgs::lli_encoder::ConstPtr& msg)
  */
 void actuationCallback(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& msg)
 {
-  direction = msg.twist.twist.linear.x > 0 ? 1 : -1;
+  direction = msg->twist.twist.linear.x > 0 ? 1 : -1;
 }
 
 int main(int argc, char** argv)
@@ -113,8 +111,8 @@ int main(int argc, char** argv)
   // Create publishers and subscribers
 
   velocity_pub = node.advertise<geometry_msgs::TwistWithCovarianceStamped>(velocity_topic, 1);
-  actuation_sub = node.subscribe(actuation_topic, 1, actuationCallback, transportHints);
-  encoder_sub = node.subscribe(encoder_topic, 1, encoderCallback, transportHints);
+  actuation_sub = node.subscribe<geometry_msgs::TwistWithCovarianceStamped>(actuation_topic, 1, actuationCallback, transportHints);
+  encoder_sub = node.subscribe<svea_msgs::lli_encoder>(encoder_topic, 1, encoderCallback, transportHints);
 
   ros::MultiThreadedSpinner spinner(2);
   spinner.spin();
