@@ -13,6 +13,9 @@
     <!-- Start localization -->
     <include file="$(find svea_sensors)/launch/localize.launch"/>
 
+    <!-- Start wheel encode -->
+    <node name="wheel_encoder" pkg="svea_sensors" type="wheel_encoder_reader.py" output="screen"/>
+
     <!-- Start state publisher -->
     <node name="state_pubber" pkg="city_lmpc" type="state_pubber.py" output="screen"/>
 
