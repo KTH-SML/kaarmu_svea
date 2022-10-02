@@ -16,13 +16,13 @@ from svea.controllers.pure_pursuit import PurePursuitSpeedController
 
 class sml_circle(Node):
 
-    VEL_REF = 0.5
-    TGT_THRESH = 0.1
+    VEL_REF = 0.4
+    TGT_THRESH = 0.5
     TRACK = [
         (-2.28, -1.73),
-        (+2.52, -1.65),
         (-2.37, +1.74),
         (+2.28, +2.00),
+        (+2.52, -1.65),
     ]
 
     def __init__(self):
@@ -45,10 +45,13 @@ class sml_circle(Node):
         self.loginfo("init done")
 
     def spin(self):
-        if self.is_close():
+
+        dist = self.dist()
+
+        if dist < self.TGT_THRESH:
             self.update_target()
         else:
-            self.loginfo(f'distance: {self.dist_to_target()}')
+            self.loginfo(f'distance: {self.dist()}')
 
         steering, velocity = self.controller.compute_control(self.state, self.target)
 
@@ -61,14 +64,11 @@ class sml_circle(Node):
         self.rviz.log_state(self.state)
         self.rviz.visualize_data()
 
-    def dist_to_target(self):
+    def dist(self):
         x, y = self.state.x, self.state.y
         xt, yt = self.target
         dx, dy = map(abs, [xt-x, yt-y])
         return hypot(dx, dy) 
-
-    def is_close(self):
-        return self.dist_to_target() < self.TGT_THRESH
 
     def update_target(self):
         self._target_index += 1
