@@ -32,7 +32,7 @@ class VehicleInterface(SubProgram):
     pub_target: abconn.Publisher
     track: Track
 
-    V_REF = 0.4
+    V_REF = 0.6
 
     LOOK_AHEAD_BASE = 0.4
     LOOK_AHEAD_FACT = 0
