@@ -80,7 +80,7 @@ class RefGenerator():
         n_ego = np.argmin(np.absolute(self.traj_local[0, :] - s_ego_0))
 
         if n_ego > self.n_r:  # ego has already returned to main lane
-            return self._check_for_obstacle(obs_pose, n_ego)
+            return self._check_for_obstacle(obs_pose, n_ego, self.traj_local, self.traj_global)
 
         # number of time-steps until ego returns to main lane
         n_delta = self.n_r - n_ego
@@ -94,7 +94,7 @@ class RefGenerator():
         # onc has drive past ego or bumper-to-bumper distance between ego and onc is large enough
         # when the time ego returns to main lane
         if (s_onc_0 < s_ego_0) or ((s_onc_r - s_ego_r) > self.L_SAFE):
-            return self._check_for_obstacle(obs_pose, n_ego)
+            return self._check_for_obstacle(obs_pose, n_ego, self.traj_local, self.traj_global)
         else:  # onc is too close to ego, we have to wait until onc passed ego
             # time until onc passes ego
             # we set traj_local[0,0] as an initial reference in case s_ego_0 > self.traj_local[0,0]
@@ -112,7 +112,7 @@ class RefGenerator():
 
             print(f'n_p={n_p}, s_ego_0={s_ego_0}, s_onc_0={s_onc_0}')
 
-            self.n_r += n_p
+            # self.n_r += n_p
             # get ref extension buffer (stand still reference)
             ref_buffer_local = ca.DM.zeros(self.n_states, n_p)
             ref_buffer_global = ca.DM.zeros(self.n_states, n_p)
@@ -129,29 +129,29 @@ class RefGenerator():
             ref_buffer_local[-1, :] = ref_buffer_global[-1, :] = ego_state.yaw
 
             # extend local and global trajectories
-            self.traj_local = ca.horzcat(ref_buffer_local, self.traj_local)
-            self.traj_global = ca.horzcat(ref_buffer_global, self.traj_global)
-            self.n_steps = self.traj_local.shape[1]
-            return self._check_for_obstacle(obs_pose, n_ego)
+            traj_local = ca.horzcat(ref_buffer_local, self.traj_local)
+            traj_global = ca.horzcat(ref_buffer_global, self.traj_global)
+            n_steps = self.traj_local.shape[1]
+            return self._check_for_obstacle(obs_pose, n_ego, traj_local, traj_global)
 
-    def _check_for_obstacle(self, obs_pose, n_ego):
+    def _check_for_obstacle(self, obs_pose, n_ego, traj_local, traj_global):
         if obs_pose is not None:
             obs_local = self.pose_to_local(obs_pose)
             # position of obstacle along s
             s_obs = obs_local[0, 0]
             # position of obstacle in time-steps
-            n_obs = np.argmin(np.absolute(self.traj_local[0, :] - s_obs))
+            n_obs = np.argmin(np.absolute(traj_local[0, :] - s_obs))
 
             if n_ego < n_obs:  # ego hasn't passed obstacle
                 if self.frame == "map":
-                    return self.traj_global[:, n_ego:n_obs - 1]
+                    return traj_global[:, n_ego:n_obs - 1]
                 else:
-                    return self.traj_local[:, n_ego:n_obs - 1]
+                    return traj_local[:, n_ego:n_obs - 1]
 
         if self.frame == "map":
-            return self.traj_global[:, n_ego:]
+            return traj_global[:, n_ego:]
         else:
-            return self.traj_local[:, n_ego:]
+            return traj_local[:, n_ego:]
 
     def load_trajectory(self, trajectory_filename="J_ref.npx"):
         try:

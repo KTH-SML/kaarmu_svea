@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="name"/>
+    <arg name="box"/>
+    <arg name="state"/>		<!-- must be global -->
+    <arg name="trigger"         default="trigger"/>
+    <arg name="trigger_rate"    default="-1"/>
+
+    <group ns="$(arg name)">
+
+        <node if="$(eval trigger_rate > 0)" name="throttle"
+              pkg="topic_tools" type="throttle"
+              args="messages $(arg state) $(arg trigger_rate) state_relayed"/>
+
+        <node unless="$(eval trigger_rate > 0)" name="relay"
+              pkg="topic_tools" type="relay" 
+ 	      args="$(arg state) state_relayed"/>
+
+        <node name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
+            <rosparam subst_value="true">
+                box: $(arg box)
+                state: state_relayed
+                trigger: $(arg trigger)
+                trigger_rate: $(arg trigger_rate)
+            </rosparam>
+        </node>
+
+    </group>
+
+</launch>

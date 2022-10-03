@@ -21,22 +21,20 @@
     </include>
 
     <!-- Start geofence for Start Area -->
-    <node ns="geofence_start" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
-        <rosparam>
-            box: [-2.00, +1.50, -1.00, +2.50]
-            state: /abconnect/obs/state
-            trigger: /geofence_start/trigger
-        </rosparam>
-    </node>
+    <include file="$(find city_lmpc)/launch/geofence.launch">
+        <arg name="name"           value="geofence_start"/>
+        <arg name="box"            value="[-2.00, +1.50, -1.00, +2.50]"/>
+        <arg name="state"          value="/abconnect/obs/state"/>
+        <arg name="trigger_rate"   value="4"/>
+    </include>
 
     <!-- Start geofence for Crash Area -->
-    <node ns="geofence_crash" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
-        <rosparam>
-            box: [+0.00, -0.50, +1.00, +0.50]
-            state: /abconnect/obs/state
-            trigger: /geofence_crash/trigger
-        </rosparam>
-    </node>
+    <include file="$(find city_lmpc)/launch/geofence.launch">
+        <arg name="name"           value="geofence_crash"/>
+        <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
+        <arg name="state"          value="/abconnect/obs/state"/>
+        <arg name="trigger_rate"   value="4"/>
+    </include>
 
     <!-- Start RSU -->
     <node ns="$(arg name)" name="$(arg name)" pkg="city_lmpc" type="rsu_demo.py" output="screen">

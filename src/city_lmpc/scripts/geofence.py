@@ -17,6 +17,10 @@ class geofence(Node):
     BOX = Parameter('~box')
     STATE_TOP = Parameter('~state')
     TRIGGER_SRV = Parameter('~trigger')
+    # If trigger_rate == -1 then trigger as fast as possible
+    # If trigger_state == 0 then trigger once
+    # If trigger_state > 0 then launch file will throttle state topic
+    TRIGGER_RATE = Parameter('~trigger_rate', -1)
 
     WARN_MESSAGE = 'Geofence for "%s" was triggered but client was not successful: %s'
 
@@ -35,13 +39,17 @@ class geofence(Node):
         )
         self.publish_fenced_area()
 
-        self.sub_state = rospy.Subscriber(
-            self.STATE_TOP,
-            VehicleStateMsg,
-            self.state_cb,
-        )
+        if self.TRIGGER_RATE == 0:
+            state = rospy.wait_for_message(VehicleStateMsg, self.STATE_TOP)
+            self.state_cb(state)
+        else:
+            self.sub_state = rospy.Subscriber(
+                self.STATE_TOP,
+                VehicleStateMsg,
+                self.state_cb,
+            )
 
-        self.log('geofence is up!')
+            self.log('geofence is up!')
 
     def publish_fenced_area(self):
         xl, yl, xu, yu = self.BOX

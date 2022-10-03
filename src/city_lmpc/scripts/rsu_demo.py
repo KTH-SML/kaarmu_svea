@@ -72,7 +72,7 @@ class rsu_demo(Node):
 
     def geofence_start_cb(self, _):
 
-        self.log('GEOFENCE TRIGGER: start')
+        # self.log('GEOFENCE TRIGGER: start')
 
         def track_spin(veh):
 
@@ -106,11 +106,17 @@ class rsu_demo(Node):
             if veh.spin.__name__ != 'track_spin':
                 veh.spin = track_spin
 
+
+        obs = self.vehicle_subprogs.get('obs')
+        ego = self.vehicle_subprogs.get('ego')
+        onc = self.vehicle_subprogs.get('onc')
+        self.log('GEOFENCE TRIGGER: start  (%s, %s, %s)', obs.spin.__name__, ego.spin.__name__, onc.spin.__name__)
+
         return True, ''
 
     def geofence_crash_cb(self, _):
 
-        self.log('GEOFENCE TRIGGER: crash')
+        # self.log('GEOFENCE TRIGGER: crash')
 
         # In case some vehicles are not in use
         obs = self.vehicle_subprogs.get('obs')
@@ -168,7 +174,7 @@ class rsu_demo(Node):
             veh.rviz.update_target((msg.x, msg.y))
 
         ego.spin = lmpc_spin
-
+        self.log(f'GEOFENCE TRIGGER: crash  (%s, %s, %s)  {ref[:3, 7]}', obs.spin.__name__, ego.spin.__name__, onc.spin.__name__)
         return True, ''
 
     #      #      #      #      #      #      #      #      #      #      #      #
