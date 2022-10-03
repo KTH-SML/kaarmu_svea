@@ -17,13 +17,13 @@
         <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
         <arg name="name"        value="rsu"/>
         <arg name="category"    value="video"/>
-        <arg name="start_delay" value="2"/>
+        <arg name="start_delay" value="3"/>
     </include>
 
     <!-- Start geofence for Start Area -->
     <node ns="geofence_start" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
         <rosparam>
-            box: [-2.16, +1.60, -1.07, +2.61]
+            box: [-2.00, +1.50, -1.00, +2.50]
             state: /abconnect/obs/state
             trigger: /geofence_start/trigger
         </rosparam>
@@ -32,7 +32,7 @@
     <!-- Start geofence for Crash Area -->
     <node ns="geofence_crash" name="geofence" pkg="city_lmpc" type="geofence.py" output="screen">
         <rosparam>
-            box: [+0.40, -0.55, +1.47, +0.65]
+            box: [+0.00, -0.50, +1.00, +0.50]
             state: /abconnect/obs/state
             trigger: /geofence_crash/trigger
         </rosparam>
