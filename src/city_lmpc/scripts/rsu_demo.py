@@ -147,6 +147,7 @@ class rsu_demo(Node):
             return False, 'EGO and/or ONC not available'
 
         ego_local = self.ref_gen.state_to_local(ego.state)
+
         # ego_local[0, 0] += 0.2
         ego_state = self.ref_gen.local_to_state(ego_local)
         ref = self.ref_gen.get_ref(ego_state, onc.state, obs_state=obs.state)
@@ -160,6 +161,10 @@ class rsu_demo(Node):
 
             s, e = veh.track.to_local(veh.state.x, veh.state.y)
 
+            if not s < veh.track.length - .5:
+                veh.spin = stop_spin
+                return
+
             # i = np.argmin(np.abs(np.linalg.norm(
             #     ref[:2, :] - np.array([[veh.state.x], [veh.state.y]]),
             #     axis=0,
@@ -169,7 +174,7 @@ class rsu_demo(Node):
             msg = Point()
             msg.x = ref[0, i]
             msg.y = ref[1, i]
-            msg.z = ref[2, i] if s < veh.track.length - .5 else 0
+            msg.z = ref[2, i] 
             veh.pub_target.publish(msg)
             veh.rviz.update_target((msg.x, msg.y))
 
