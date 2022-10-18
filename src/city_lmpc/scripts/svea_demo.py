@@ -103,27 +103,23 @@ class svea(Node):
             queue_size=1,
         )
 
-        self.sub_target = abconn.Subscriber(
+        self.sub_ctrl = abconn.Subscriber(
             'rsu',
             DECA[self.NAME] + 3,
-            '/abconnect/rsu/{veh}/target'.format(veh=self.NAME),
+            '/abconnect/rsu/{veh}/ctrl'.format(veh=self.NAME),
             Point,
-            self.svea_target_cb,
+            self.svea_ctrl_cb,
         )
         self.log('Created subscriber to %s (%d)',
-                 '/abconnect/rsu/{veh}/target'.format(veh=self.NAME),
+                 '/abconnect/rsu/{veh}/ctrl'.format(veh=self.NAME),
                  DECA[self.NAME] + 3)
 
         rospy.wait_for_message(
-            '/abconnect/rsu/{veh}/target'.format(veh=self.NAME),
+            '/abconnect/rsu/{veh}/ctrl'.format(veh=self.NAME),
             Point,
         )
 
         self.log('Starting run')
-
-    def svea_target_cb(self, msg):
-        self.target = (msg.x, msg.y)
-        self.target_velocity = msg.z
 
     def lli_remote_cb(self, msg):
         self.ctrl = msg.ctrl
@@ -150,28 +146,25 @@ class svea(Node):
     def keep_alive(self):
         return not self.is_shutdown()
 
-    @Rate(50)
-    def spin(self):
+    def svea_ctrl_cb(self, msg: Point):
 
-        # Compute control using path tracking MPC
-        self.controller.target_velocity = self.target_velocity
-        steering, velocity = self.controller.compute_control(self.state, self.target)
+        # Encoding:
+        steering = msg.x
+        velocity = msg.y
 
         # Build control signal to SVEA
-        if self.target_velocity > 0.1:
-            self.actuation.send_control(
-                    steering=steering,
-                    velocity=velocity,
-                    brake_force=0,
-                    transmission=0,
-                    differential_front=0,
-                    differential_rear=0,
-                )
+        self.actuation.send_control(
+            steering=steering,
+            velocity=velocity,
+            brake_force=0,
+            transmission=0,
+            differential_front=0,
+            differential_rear=0,
+        )
 
         # Handle the publishing of RVIZ topics
         self.rviz.log_ctrl(steering, velocity, rospy.get_time())
         self.rviz.log_state(self.state)
-        self.rviz.update_target(self.target)
         self.rviz.visualize_data()
 
 if __name__ == '__main__':
