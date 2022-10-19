@@ -91,18 +91,23 @@ class rsu_demo(Node):
                 veh.track.points_array[2, :] - s - look_ahead
             ))
 
-            msg = Point()
-            msg.x, msg.y, _ = adjust_for_lane(
+            tgt_x, tgt_y, _ = adjust_for_lane(
                 veh.lane,
                 veh.track.points_array[0, i],
                 veh.track.points_array[1, i],
                 veh.track.points_array[4, i],
             )
-            msg.z = veh.V_REF if s < veh.track.length - .5 else 0
-            veh.pub_target.publish(msg)
-            veh.rviz.update_target((msg.x, msg.y))
+            tgt_v = veh.V_REF if s < veh.track.length - .5 else 0
+
+            veh.controller.target_velocity = tgt_v
+            steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
+
+            veh.rviz.update_target((tgt_x, tgt_y))
+            veh.send_ctrl(steering, velocity)
 
         for veh in self.vehicle_subprogs.values():
+            # We maybe want something like this here
+            # veh.controller.reset()
             if veh.spin.__name__ != 'track_spin':
                 veh.spin = track_spin
 
@@ -131,13 +136,8 @@ class rsu_demo(Node):
         # if obs.spin.__name__ != 'stop_spin':
 
         def stop_spin(veh):
-
-            msg = Point()
-            msg.x = veh.state.x
-            msg.y = veh.state.y
-            msg.z = 0
-            veh.pub_target.publish(msg)
-            veh.rviz.update_target((msg.x, msg.y))
+            veh.send_ctrl(0, 0)
+            veh.rviz.update_target((veh.state.x, veh.state.y))
 
         obs.spin = stop_spin
 
@@ -171,12 +171,15 @@ class rsu_demo(Node):
             # )))
             i = 7
 
-            msg = Point()
-            msg.x = ref[0, i]
-            msg.y = ref[1, i]
-            msg.z = ref[2, i] 
-            veh.pub_target.publish(msg)
-            veh.rviz.update_target((msg.x, msg.y))
+            tgt_x = ref[0, i]
+            tgt_y = ref[1, i]
+            tgt_v = ref[2, i]
+
+            veh.controller.target_velocity = tgt_v
+            steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
+
+            veh.send_ctrl(steering, velocity)
+            veh.rviz.update_target((tgt_x, tgt_y))
 
         ego.spin = lmpc_spin
         self.log(f'GEOFENCE TRIGGER: crash  (%s, %s, %s)  {ref[:3, 7]}', obs.spin.__name__, ego.spin.__name__, onc.spin.__name__)

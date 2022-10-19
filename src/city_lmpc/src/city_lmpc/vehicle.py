@@ -11,6 +11,7 @@ from svea_msgs.msg import VehicleState as VehicleStateMsg
 from svea.states import VehicleState
 from svea.data import RVIZPathHandler
 
+from city_lmpc.pure_pursuit import PurePursuitSpeedController
 from city_lmpc.arcs import Track, get_track, adjust_for_lane, TRACK_CHOOSER
 
 DECA = {
@@ -29,8 +30,10 @@ class VehicleInterface(SubProgram):
 
     rviz: RVIZPathHandler
 
-    pub_target: abconn.Publisher
+    pub_ctrl: abconn.Publisher
     track: Track
+
+    controller: PurePursuitSpeedController
 
     V_REF = 0.6
 
@@ -59,6 +62,8 @@ class VehicleInterface(SubProgram):
             not downstream,
         )
 
+        self.controller = PurePursuitSpeedController()
+
         self.sub_veh_state = abconn.Subscriber(
             self.name,
             DECA[self.name] + 0,
@@ -76,15 +81,15 @@ class VehicleInterface(SubProgram):
             VehicleStateMsg,
         )
 
-        self.pub_target = abconn.Publisher(
+        self.pub_ctrl = abconn.Publisher(
             self.name,
             DECA[self.name] + 3,
-            '/{veh}/target'.format(veh=self.name),
+            '/{veh}/ctrl'.format(veh=self.name),
             Point,
             queue_size=1,
         )
         rospy.loginfo('Created publisher to %s (%d)',
-                      '/{veh}/target'.format(veh=self.name),
+                      '/{veh}/ctrl'.format(veh=self.name),
                       DECA[self.name] + 3)
 
         traj_x, traj_y = self.track.cartesian
@@ -96,6 +101,12 @@ class VehicleInterface(SubProgram):
         self.spin = lambda _: None
 
         rospy.loginfo('VEHICLE INTERFACE CREATED (%s)', self.name)
+
+    def send_ctrl(self, steering, velocity):
+        msg = Point()
+        msg.x = steering
+        msg.y = velocity
+        self.pub_ctrl.publish(msg)
 
     def state_cb(self, msg):
         self.state.state_msg = msg
