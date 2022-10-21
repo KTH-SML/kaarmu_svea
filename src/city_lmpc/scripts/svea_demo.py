@@ -14,7 +14,6 @@ from city_lmpc.vehicle import DECA
 from city_lmpc.pure_pursuit import PurePursuitSpeedController
 
 from svea_msgs.msg import VehicleState as VehicleStateMsg
-from svea_msgs.msg import lli_ctrl
 from svea.actuation import ActuationInterface
 from svea.states import VehicleState
 from svea.data import RVIZPathHandler
@@ -88,11 +87,6 @@ class svea(Node):
             queue_size=1,
         )
 
-        rospy.Subscriber('lli/remote',
-                         lli_ctrl,
-                         self.lli_remote_cb)
-
-        rospy.wait_for_message('lli/remote', lli_ctrl)
         rospy.Timer(rospy.Duration(2), self.publish_initialpose)
 
         abconn.Publisher(
@@ -120,11 +114,6 @@ class svea(Node):
         )
 
         self.log('Starting run')
-
-    def lli_remote_cb(self, msg):
-        self.ctrl = msg.ctrl
-        if self.ctrl > 3:
-            self.controller.reset()
 
     def publish_initialpose(self, _):
         if self.ctrl > 3:

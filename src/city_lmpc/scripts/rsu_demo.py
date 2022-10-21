@@ -99,8 +99,12 @@ class rsu_demo(Node):
             )
             tgt_v = veh.V_REF if s < veh.track.length - .5 else 0
 
-            veh.controller.target_velocity = tgt_v
-            steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
+            if veh.state_ctrl > 3:
+                steering, velocity = 0, 0
+                veh.controller.reset()
+            else:
+                veh.controller.target_velocity = tgt_v
+                steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
 
             veh.rviz.update_target((tgt_x, tgt_y))
             veh.send_ctrl(steering, velocity)
@@ -175,8 +179,13 @@ class rsu_demo(Node):
             tgt_y = ref[1, i]
             tgt_v = ref[2, i]
 
-            veh.controller.target_velocity = tgt_v
-            steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
+            if veh.state_ctrl > 3:
+                steering, velocity = 0, 0
+                veh.controller.reset()
+            else:
+                veh.controller.target_velocity = tgt_v
+                steering, velocity = veh.controller.compute_control(veh.state, (tgt_x, tgt_y))
+
 
             veh.send_ctrl(steering, velocity)
             veh.rviz.update_target((tgt_x, tgt_y))

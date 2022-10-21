@@ -5,4 +5,5 @@ float64 x
 float64 y
 float64 yaw
 float32 v   # Velocity
+int8 ctrl
 float64[16] covariance

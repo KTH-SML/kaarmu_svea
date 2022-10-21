@@ -110,6 +110,7 @@ class VehicleInterface(SubProgram):
 
     def state_cb(self, msg):
         self.state.state_msg = msg
+        self.state_ctrl = msg.ctrl
         self.rviz.log_state(self.state)
         self.rviz.visualize_data()
 
