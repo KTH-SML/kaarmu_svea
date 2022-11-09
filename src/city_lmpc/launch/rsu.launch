@@ -36,6 +36,14 @@
         <arg name="trigger_rate"   value="4"/>
     </include>
 
+    <!-- Start geofence for Safe Area -->
+    <include file="$(find city_lmpc)/launch/geofence.launch">
+        <arg name="name"           value="geofence_safe"/>
+        <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
+        <arg name="state"          value="/rsu/objectposes"/>
+        <arg name="trigger_rate"   value="4"/>
+    </include>
+
     <!-- Start RSU -->
     <node ns="$(arg name)" name="$(arg name)" pkg="city_lmpc" type="rsu_demo.py" output="screen">
         <rosparam subst_value="true" >

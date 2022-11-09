@@ -22,6 +22,8 @@ class rsu_demo(Node):
 
     TIME_STEP = 0.1
 
+    is_safe = False
+
     def __init__(self):
 
         self.master_track = get_track(
@@ -55,6 +57,12 @@ class rsu_demo(Node):
             '/geofence_start/trigger',
             Trigger,
             self.geofence_start_cb,
+        )
+
+        self.srv_geofence_safe = rospy.Service(
+            '/geofence_safe/trigger',
+            Trigger,
+            self.geofence_safe_cb,
         )
 
         self.srv_geofence_crash = rospy.Service(
@@ -113,6 +121,33 @@ class rsu_demo(Node):
         self.log('GEOFENCE TRIGGER: start  (%s, %s, %s)', obs.spin.__name__, ego.spin.__name__, onc.spin.__name__)
 
         return True, ''
+
+    def geofence_safe_cb(self, _):
+
+        self.is_safe = False
+
+        all_spins = [veh.spin for veh in self.vehicle_subprogs.values()]
+
+        def safe_spin(veh):
+
+            msg = Point()
+            msg.x = veh.state.x
+            msg.y = veh.state.y
+            msg.z = veh.state.v * 0.5   # decrease with 50 %
+            veh.pub_target.publish(msg)
+            veh.rviz.update_target((msg.x, msg.y))
+
+            if self.is_safe:
+                # return to old spin
+                vehs = self.vehicle_subprogs.values()
+                for veh, spin in zip(vehs, all_spins):
+                    if veh.spin.__name__ != spin.__name__:
+                        veh.spin = spin
+
+        for veh in self.vehicle_subprogs.values():
+            if veh.spin.__name__ != 'safe_spin':
+                veh.spin = safe_spin
+
 
     def geofence_crash_cb(self, _):
 
@@ -174,63 +209,13 @@ class rsu_demo(Node):
             msg = Point()
             msg.x = ref[0, i]
             msg.y = ref[1, i]
-            msg.z = ref[2, i] 
+            msg.z = ref[2, i]
             veh.pub_target.publish(msg)
             veh.rviz.update_target((msg.x, msg.y))
 
         ego.spin = lmpc_spin
         self.log(f'GEOFENCE TRIGGER: crash  (%s, %s, %s)  {ref[:3, 7]}', obs.spin.__name__, ego.spin.__name__, onc.spin.__name__)
         return True, ''
-
-    #      #      #      #      #      #      #      #      #      #      #      #
-    # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO # DEMO #
-    #      #      #      #      #      #      #      #      #      #      #      #
-
-
-    def demo_crash(self):
-
-        if self.SCENARIO == 1:
-
-            obs, ego, onc = self.vehicles
-
-            rospy.loginfo(obs.state)
-            obs_local = self.gen.state_to_local(obs.state)
-            obs_local[0, 0] -= 0.6
-            obs_state = self.gen.local_to_state(obs_local)
-            ref = self.gen.get_ref(ego.state, onc.state, obs_state=obs_state)
-
-            traj_x = [ref[0, i] for i in range(ref.shape[1])]
-            traj_y = [ref[1, i] for i in range(ref.shape[1])]
-            ego.rviz.update_traj(traj_x, traj_y)
-            ego.rviz.visualize_data()
-
-            old_spin = self.vehicle_spin
-
-            def spinner(vehicle):
-
-                if vehicle.name == 'ego':
-
-                    obs, ego, onc = self.vehicles
-
-                    vehicle.enable_vehicle(True)
-
-                    if ref.shape[1] < 5:
-                        k = -1
-                        self.vehicle_spin = old_spin
-                    else:
-                        k = 5
-
-                    msg = Point()
-                    msg.x = ref[0, k]
-                    msg.y = ref[1, k]
-                    msg.z = ref[2, k]
-
-                else:
-                    msg = old_spin(vehicle)
-
-                return msg
-
-            self.vehicle_spin = spinner
 
 
 if __name__ == '__main__':
