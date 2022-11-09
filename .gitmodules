@@ -4,3 +4,22 @@
 [submodule "src/ros_abconnect"]
 	path = src/ros_abconnect
 	url = https://github.com/kaarmu/ros_abconnect
+[submodule "src/image_common"]
+	path = src/image_common
+	url = https://github.com/ros-perception/image_common
+	branch = noetic-devel
+[submodule "src/image_transport_plugins"]
+	path = src/image_transport_plugins
+	url = https://github.com/ros-perception/image_transport_plugins
+	branch = noetic-devel
+[submodule "src/realsense-ros"]
+	path = src/realsense-ros
+	url = https://github.com/IntelRealSense/realsense-ros
+	branch = ros1-legacy
+[submodule "src/vision_opencv"]
+	path = src/vision_opencv
+	url = https://github.com/ros-perception/vision_opencv
+	branch = noetic
+[submodule "src/zed-ros-wrapper"]
+	path = src/zed-ros-wrapper
+	url = https://github.com/stereolabs/zed-ros-wrapper
