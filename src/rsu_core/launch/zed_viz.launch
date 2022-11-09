@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Produced topics -->
+    <arg name="object_markers"  default="object_markers"/>
+
+    <!-- Options -->
+    <arg name="use_cuda"        default="true"/>
+
+    <!-- Auxiliary -->
+    <arg name="max_age"         default="30"/>
+    <arg name="cfg_path"        default="$(find rsu_core)/data/yolov4-tiny.cfg"/>
+    <arg name="weights_path"    default="$(find rsu_core)/data/yolov4-tiny.weights"/>
+    <arg name="labels_path"     default="$(find rsu_core)/data/coco.names"/>
+
+    <!-- Constants -->
+    <arg name="aruco_size"      value="0.106"/>
+    <arg name="depth_image"     value="/zed/zed_node/depth/depth_registered"/>
+    <arg name="image"           value="/zed/zed_node/rgb/image_rect_color"/>
+
+
+    <!-- Nodes -->
+
+    <include ns="/zed" file="$(find zed_wrapper)/launch/zed_camera.launch"/>
+
+    <include ns="/rsu" file="$(find rsu_core)/launch/object_pose.launch">
+        <!-- Options -->
+        <arg name="use_cuda"        	value="$(arg use_cuda)"/>
+        <arg name="enable_bbox_image"  	value="true"/>
+        <!-- Consumed topics -->
+        <arg name="image"           	value="$(arg image)"/>
+        <arg name="depth_image"     	value="$(arg depth_image)"/>
+    </include>
+
+    <include ns="/rsu" file="$(find rsu_core)/launch/aruco_detect.launch">
+        <!-- Consumed topics -->
+        <arg name="image"       value="$(arg image)"/>
+        <!-- Auxiliary -->
+        <arg name="aruco_size"  value="$(arg aruco_size)"/>
+    </include>
+
+    <node name="object_viz" pkg="rsu_core" type="object_viz.py" output="screen">
+        <!-- Consumed topics -->
+	<param name="objectposes"       value="/rsu/objectposes"/>
+        <!-- Produced topics -->
+        <param name="object_markers"    value="$(arg object_markers)"/>
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rsu_core)/rviz/zed_viz.rviz"/>
+
+</launch>

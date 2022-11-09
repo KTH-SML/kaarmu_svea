@@ -49,6 +49,16 @@ RUN apt-get update -y && \
     python3 -m pip install -U pip && \
     rm -rf /var/lib/apt/lists/*
 
+## Install nodejs and yarn
+
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash && \
+    apt-get update -y && \
+    apt-get install --no-install-recommends -y \
+        nodejs \
+	&& \
+    npm install --global yarn && \
+    rm -rf /var/lib/apt/lists/* 
+
 ## Create svea workspace
 
 COPY . $WORKSPACE

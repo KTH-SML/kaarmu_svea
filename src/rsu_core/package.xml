@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rsu_core</name>
+  <version>0.1.0</version>
+  <description>The rsu package</description>
+
+  <maintainer email="kajarf@kth.se">Kaj Munhoz Arfvidsson</maintainer>
+
+  <license>MIT</license>
+
+  <url type="website">https://svea.eecs.kth.se</url>
+
+  <author email="kajarf@kth.se">Kaj Munhoz Arfvidsson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>aruco_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>geometry_msgs</depend>
+  <depend>image_geometry</depend>
+  <depend>python-numpy</depend>
+  <depend>python-opencv</depend>
+  <depend>python3-filterpy-pip</depend>
+  <depend>python3-numpy</depend>
+  <depend>python3-opencv</depend>
+  <depend>python3-scipy</depend>
+  <depend>rospy</depend>
+  <depend>rsu_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf_conversions</depend>
+
+  <export></export>
+</package>
