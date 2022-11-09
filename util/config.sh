@@ -61,8 +61,8 @@ climb() {
 }
 
 # Assert shell variable with name NAME is the number one
-# > isone NAME
-isone() {
+# > istrue NAME
+istrue() {
     VALUE="$(eval echo "\$$1")"
     test "${VALUE:-0}" -eq 1
     return $?
@@ -77,8 +77,8 @@ REPOSITORY_PATH="$(climb .git)"
 REPOSITORY_NAME="$(basename "$REPOSITORY_PATH")"
 
 BUILD_CONTEXT="$REPOSITORY_PATH"
-BUILD_IMAGE="ros"
-BUILD_TAG="noetic"
+BUILD_IMAGE="dustynv/ros"
+BUILD_TAG="noetic-pytorch-l4t-r35.1.0"
 IMAGE_TAG="$(basename "$BUILD_CONTEXT")"
 IMAGE_TAG="${IMAGE_TAG%%.*}"
 CONTAINER_NAME="$REPOSITORY_NAME"
@@ -87,12 +87,6 @@ ROSDISTRO="${BUILD_TAG%%-*}"
 WORKSPACE="/$IMAGE_TAG"
 SHRVOL_SRC="$REPOSITORY_PATH/src"
 SHRVOL_DST="$WORKSPACE/src"
-
-if [ ${DESKTOP:-0} -eq 1 ]; then
-    BUILD_IMAGE="osrf/ros"
-    BUILD_TAG="$ROSDISTRO-desktop"
-fi
-
 
 if [ -n "$DEBUG" ]; then
     echo "REPOSITORY_PATH=$REPOSITORY_PATH"

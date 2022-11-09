@@ -7,6 +7,12 @@ ARG BUILD_TAG
 ARG ROSDISTRO
 ARG WORKSPACE
 
+###############
+## ZED IMAGE ##
+###############
+
+FROM stereolabs/zed:3.7-py-runtime-l4t-r35.1 AS zed
+
 #####################
 ## SVEA BASE IMAGE ##
 #####################
@@ -17,10 +23,19 @@ ARG ROSDISTRO
 ARG WORKSPACE
 ARG DEBIAN_FRONTEND=noninteractive
 
+## Multi-stage build
+
+COPY --from=zed \
+    /usr/local/zed \
+    /usr/local/zed
+
+COPY --from=zed \
+    /usr/local/lib/python3.8/dist-packages/pyzed \
+    /usr/local/lib/python3.8/dist-packages/pyzed
+
 ## Install dependencies from apt-get
 
 RUN apt-get update -y && \
-    apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
         apt-utils \
         git vim nano curl iputils-ping \
@@ -29,18 +44,9 @@ RUN apt-get update -y && \
         python3-numpy \
         python3-matplotlib \
         python3-catkin-tools \
+	libturbojpeg \
         && \
     python3 -m pip install -U pip && \
-    rm -rf /var/lib/apt/lists/*
-
-## Install nodejs and yarn
-
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash && \
-    apt-get update -y && \
-    apt-get install --no-install-recommends -y \
-        nodejs \
-        && \
-    npm install --global yarn && \
     rm -rf /var/lib/apt/lists/*
 
 ## Create svea workspace
@@ -57,10 +63,16 @@ RUN cp -f entrypoint /ros_entrypoint.sh && \
         --rosdistro $ROSDISTRO \
         --from-paths src \
         --ignore-src \
+	--skip-keys libopencv-dev \
+	--skip-keys python-opencv \
         -qry \
         && \
     pip install -r requirements.txt && \
     rm -rf /var/lib/apt/lists/*
+
+# Quickfix
+RUN cd /usr/lib/aarch64-linux-gnu && \
+    ln -sf libusb-1.0.so.0 libusb-1.0.so
 
 # Run catkin build on workspace (improves build speeds later on).
 # Ending on true is a hacky way to ensure the docker build continues
