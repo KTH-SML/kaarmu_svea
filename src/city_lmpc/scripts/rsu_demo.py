@@ -5,6 +5,8 @@ import numpy as np
 from rosonic import Node, Parameter, OnShutdown
 
 import rospy
+import tf2_ros
+from tf2_geometry_msgs import do_transform_pose
 from geometry_msgs.msg import Point
 from std_srvs.srv import Trigger
 
@@ -12,6 +14,12 @@ from city_lmpc.arcs import get_track, adjust_for_lane, TRACK_CHOOSER
 from city_lmpc.vehicle import VehicleInterface
 from city_lmpc.ref_generator import RefGenerator
 
+from rsu_msgs.msg import StampedObjectPoseArray
+
+def isinside(pt, box):
+    xl, yl, xu, yu = box
+    x, y = pt
+    return (xl < x < xu) and (yl < y < yu)
 
 class rsu_demo(Node):
 
@@ -22,7 +30,9 @@ class rsu_demo(Node):
 
     TIME_STEP = 0.1
 
-    is_safe = False
+    SAFE_BOX = [-1.26, -7.15, +0.74, -5.15]
+
+    unsafe_since = None 
 
     def __init__(self):
 
@@ -53,22 +63,27 @@ class rsu_demo(Node):
                 self.master_track,
             ).start()
 
-        self.srv_geofence_start = rospy.Service(
-            '/geofence_start/trigger',
-            Trigger,
-            self.geofence_start_cb,
-        )
+        self.tf_buf = tf2_ros.Buffer() 
+        tf2_ros.TransformListener(self.tf_buf)
 
-        self.srv_geofence_safe = rospy.Service(
-            '/geofence_safe/trigger',
-            Trigger,
-            self.geofence_safe_cb,
+        self.sub_objectposes = rospy.Subscriber(
+            '/rsu/objectposes',
+            StampedObjectPoseArray,
+            self.objectposes_cb,
+            # queue_size=4,
+            # buff_size=4*100,
         )
 
         self.srv_geofence_crash = rospy.Service(
             '/geofence_crash/trigger',
             Trigger,
             self.geofence_crash_cb,
+        )
+
+        self.srv_geofence_start = rospy.Service(
+            '/geofence_start/trigger',
+            Trigger,
+            self.geofence_start_cb,
         )
 
     @OnShutdown()
@@ -78,9 +93,34 @@ class rsu_demo(Node):
             if veh is not None:
                 veh.stop_and_join()
 
+    def objectposes_cb(self, objectposes):
+
+        origin_frame = objectposes.header.frame_id 
+
+        if not self.tf_buf.can_transform(origin_frame, 'map', rospy.Time()):
+            print('CANNOT TRANSFORM')
+            return
+
+        for objpose in filter(self.person_filter, objectposes.objects):
+
+            transform = self.tf_buf.lookup_transform(origin_frame, 'map', rospy.Time())
+            pose = do_transform_pose(objpose.pose, transform)
+
+            pt = pose.pose.position.x, pose.pose.position.y
+            ## print("PERSON!!!", pt)
+
+            if isinside(pt, self.SAFE_BOX):
+                self.geofence_safe_cb(None)
+                return
+
+    @staticmethod 
+    def person_filter(objpose):
+        return objpose.object.label == 'person'
+
     def geofence_start_cb(self, _):
 
-        # self.log('GEOFENCE TRIGGER: start')
+        if not self.is_safe:
+            return True, ''
 
         def track_spin(veh):
 
@@ -114,7 +154,6 @@ class rsu_demo(Node):
             if veh.spin.__name__ != 'track_spin':
                 veh.spin = track_spin
 
-
         obs = self.vehicle_subprogs.get('obs')
         ego = self.vehicle_subprogs.get('ego')
         onc = self.vehicle_subprogs.get('onc')
@@ -122,9 +161,28 @@ class rsu_demo(Node):
 
         return True, ''
 
+    @property
+    def is_safe(self):
+        t = rospy.Time.now()
+        if self.unsafe_since is None:
+            # Unsafe hasn't happened
+            return True
+        elif (t - self.unsafe_since).to_sec() > 3:
+            # Must have been safe for at least 3 sec
+            ##  print("SAFE AGAIN")
+            self.unsafe_since = None 
+            return True
+        else:
+            """COMMENT
+            print("time since:", (t - self.unsafe_since).to_sec(), 
+                  "current time:", t, 
+                  "unsafe time:", self.unsafe_since)
+            """
+            return False
+
     def geofence_safe_cb(self, _):
 
-        self.is_safe = False
+        self.unsafe_since = rospy.Time.now()
 
         all_spins = [veh.spin for veh in self.vehicle_subprogs.values()]
 
@@ -148,10 +206,9 @@ class rsu_demo(Node):
             if veh.spin.__name__ != 'safe_spin':
                 veh.spin = safe_spin
 
+        self.log('GEOFENCE TRIGGER: safe')
 
     def geofence_crash_cb(self, _):
-
-        # self.log('GEOFENCE TRIGGER: crash')
 
         # In case some vehicles are not in use
         obs = self.vehicle_subprogs.get('obs')

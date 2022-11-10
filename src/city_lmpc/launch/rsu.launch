@@ -3,9 +3,15 @@
 
     <!-- Launch file arguments -->
     <arg name="name"        default="rsu"/>
+    <arg name="use_cuda"            default="true"/>
+    <arg name="enable_bbox_image"   default="false"/>
+    <arg name="max_age"             default="30"/>
 
     <!-- Launch file constants -->
     <arg name="map_file"    value="$(find svea_core)/maps/sml.yaml" />
+    <arg name="depth_image"     value="/zed/zed_node/depth/depth_registered"/>
+    <arg name="image"           value="/zed/zed_node/rgb/image_rect_color"/>
+    <arg name="websocket_port"  value="9090"/>
 
     <!-- Publish map -->
     <node name="map_server" pkg="map_server" type="map_server"
@@ -18,6 +24,29 @@
         <arg name="name"        value="rsu"/>
         <arg name="category"    value="video"/>
         <arg name="start_delay" value="3"/>
+    </include>
+
+    <include file="$(find zed_wrapper)/launch/zed.launch">
+        <arg name="camera_name" value="zed"/>
+    </include>
+
+    <node name="image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg image) 10" output="screen"/>
+
+    <node name="depth_image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg depth_image) 10" output="screen"/>
+
+    <!--
+    <node name="objectposes_throttle" pkg="topic_tools" type="throttle" args="messages /rsu/objectposes 10" output="screen"/>
+-->
+
+    <include ns="/rsu" file="$(find rsu_core)/launch/object_pose.launch">
+        <!-- Options -->
+        <arg name="use_cuda"            value="$(arg use_cuda)"/>
+        <arg name="enable_bbox_image"   value="$(arg enable_bbox_image)"/>
+        <!-- Consumed topics -->
+	<arg name="image"               value="$(arg image)_throttle"/>
+	<arg name="depth_image"         value="$(arg depth_image)_throttle"/>
+        <!-- Auxiliary -->
+        <arg name="max_age"             value="$(arg max_age)"/>
     </include>
 
     <!-- Start geofence for Start Area -->
@@ -33,14 +62,6 @@
         <arg name="name"           value="geofence_crash"/>
         <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
         <arg name="state"          value="/abconnect/obs/state"/>
-        <arg name="trigger_rate"   value="4"/>
-    </include>
-
-    <!-- Start geofence for Safe Area -->
-    <include file="$(find city_lmpc)/launch/geofence.launch">
-        <arg name="name"           value="geofence_safe"/>
-        <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
-        <arg name="state"          value="/rsu/objectposes"/>
         <arg name="trigger_rate"   value="4"/>
     </include>
 

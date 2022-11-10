@@ -12,7 +12,6 @@ setup_args = generate_distutils_setup(
         'scripts/object_viz.py',
     ],
     packages=[
-        'rosnode',
         'sort',
         'tool',
     ],

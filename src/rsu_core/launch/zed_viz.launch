@@ -21,7 +21,9 @@
 
     <!-- Nodes -->
 
-    <include ns="/zed" file="$(find zed_wrapper)/launch/zed_camera.launch"/>
+    <include file="$(find zed_wrapper)/launch/zed.launch">
+        <arg name="camera_name" value="zed"/>
+    </include>
 
     <include ns="/rsu" file="$(find rsu_core)/launch/object_pose.launch">
         <!-- Options -->
