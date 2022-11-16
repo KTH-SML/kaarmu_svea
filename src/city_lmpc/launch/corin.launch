@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="name"                default="corin"/>
+    <arg name="use_cuda"            default="true"/>
+    <arg name="enable_bbox_image"   default="false"/>
+    <arg name="max_age"             default="30"/>
+
+    <!-- Launch file constants -->
+    <arg name="map_file"    value="$(find svea_core)/maps/sml.yaml" />
+    <arg name="depth_image"     value="/zed/zed_node/depth/depth_registered"/>
+    <arg name="image"           value="/zed/zed_node/rgb/image_rect_color"/>
+    <arg name="websocket_port"  value="9090"/>
+
+    <!-- Publish map -->
+    <node name="map_server" pkg="map_server" type="map_server"
+          args="$(arg map_file)"
+          output="screen" />
+
+    <!-- Start ABConnect -->
+    <include file="$(find ros_abconnect)/launch/abconnect.launch">
+        <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
+        <arg name="name"        value="$(arg name)"/>
+        <arg name="category"    value="video"/>
+        <arg name="start_delay" value="3"/>
+    </include>
+
+    <!-- Connect to topic -->
+    <node name="ros_abconnnect__state" pkg="ros_abconnect" name="add_remote_topic.py" output="screen">
+        <arg name="role"    value="subscriber">
+        <arg name="client"  value="rsu">
+        <arg name="id"      value="90">
+        <arg name="topic"   value="/rsu/objectposes">
+        <arg name="type"    value="rsu_msgs/StampedObjectPoseArray">
+    </node>
+
+    <!-- Start geofence for Start Area -->
+    <include file="$(find city_lmpc)/launch/geofence.launch">
+        <arg name="name"           value="geofence_start"/>
+        <arg name="box"            value="[-2.00, +1.50, -1.00, +2.50]"/>
+        <arg name="state"          value="/abconnect/obs/state"/>
+        <arg name="trigger_rate"   value="4"/>
+    </include>
+
+    <!-- Start geofence for Crash Area -->
+    <include file="$(find city_lmpc)/launch/geofence.launch">
+        <arg name="name"           value="geofence_crash"/>
+        <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
+        <arg name="state"          value="/abconnect/obs/state"/>
+        <arg name="trigger_rate"   value="4"/>
+    </include>
+
+    <!-- Start RSU -->
+    <node ns="$(arg name)" name="$(arg name)" pkg="city_lmpc" type="corin.py" output="screen">
+        <rosparam subst_value="true" >
+            demo_scenario: 0
+            track: arcs
+            s0: [-1.833, +2.299, +0.00]
+            vehicle_list:
+            - [obs, true]
+            - [ego, true]
+            - [onc, false]
+        </rosparam>
+    </node>
+
+</launch>

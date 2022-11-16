@@ -10,15 +10,15 @@
 
 This is what we want on the same ROS Master
 
-- (top) `/rsu/obs/target`: rsu -> obs
-- (top) `/rsu/ego/target`: rsu -> ego
-- (top) `/rsu/onc/target`: rsu -> onc
-- (top) `/obs/state`: obs -> rsu
-- (top) `/ego/state`: ego -> rsu
-- (top) `/onc/state`: onc -> rsu
-- (srv) `/obs/enable_vehicle`: obs .. rsu
-- (srv) `/ego/enable_vehicle`: ego .. rsu
-- (srv) `/onc/enable_vehicle`: onc .. rsu
+- (top) `/corin/obs/target`: corin -> obs
+- (top) `/corin/ego/target`: corin -> ego
+- (top) `/corin/onc/target`: corin -> onc
+- (top) `/obs/state`: obs -> corin
+- (top) `/ego/state`: ego -> corin
+- (top) `/onc/state`: onc -> corin
+- (srv) `/obs/enable_vehicle`: obs .. corin
+- (srv) `/ego/enable_vehicle`: ego .. corin
+- (srv) `/onc/enable_vehicle`: onc .. corin
 
 A topic is one way and require only one connection.
 
@@ -28,18 +28,18 @@ first for the request and second for the response, i.e. topic request id is the
 same as service id and implcitly the response must then be the following integer,
 e.g. 6 (request) and 7 (response).
 
-00. `/obs/state`: obs -> rsu
-01. `/ego/state`: ego -> rsu
-02. `/onc/state`: onc -> rsu
-03. `/rsu/obs/target`: rsu -> obs
-04. `/rsu/ego/target`: rsu -> ego
-05. `/rsu/onc/target`: rsu -> onc
-06. `/obs/enable_vehicle`: obs <- rsu
-07. `/obs/enable_vehicle`: obs -> rsu
-08. `/ego/enable_vehicle`: ego <- rsu
-09. `/ego/enable_vehicle`: ego -> rsu
-10. `/onc/enable_vehicle`: onc <- rsu
-11. `/onc/enable_vehicle`: onc -> rsu
+00. `/obs/state`: obs -> corin
+01. `/ego/state`: ego -> corin
+02. `/onc/state`: onc -> corin
+03. `/corin/obs/target`: corin -> obs
+04. `/corin/ego/target`: corin -> ego
+05. `/corin/onc/target`: corin -> onc
+06. `/obs/enable_vehicle`: obs <- corin
+07. `/obs/enable_vehicle`: obs -> corin
+08. `/ego/enable_vehicle`: ego <- corin
+09. `/ego/enable_vehicle`: ego -> corin
+10. `/onc/enable_vehicle`: onc <- corin
+11. `/onc/enable_vehicle`: onc -> corin
 
 How relevant topics/services will look like for RSU:
 
@@ -58,10 +58,12 @@ How relevant topics/services will look like for RSU:
 
 How relevant topics/services will look like for SVEA:
 
-- [00,01,02] pub `/abconnect/rsu/state`
-- [03,04,05] sub `/abconnect/rsu/target`
-- [06,08,10] sub `/abconnect/rsu/srv/req/enable_vehicle`
-- [07,09,11] pub `/abconnect/rsu/srv/res/enable_vehicle`
+- [00,01,02] pub `/abconnect/corin/state`
+- [03,04,05] sub `/abconnect/corin/target`
+- [06,08,10] sub `/abconnect/corin/srv/req/enable_vehicle`
+- [07,09,11] pub `/abconnect/corin/srv/res/enable_vehicle`
+
+90. `/rsu/objectposes`: rsu -> corin
 
 ### Docker
 

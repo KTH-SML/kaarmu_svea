@@ -21,7 +21,7 @@ def isinside(pt, box):
     x, y = pt
     return (xl < x < xu) and (yl < y < yu)
 
-class rsu_demo(Node):
+class corin_demo(Node):
 
     S0 = Parameter('~s0')
     TRACK = Parameter('~track')

@@ -26,52 +26,16 @@
         <arg name="start_delay" value="3"/>
     </include>
 
-    <include file="$(find zed_wrapper)/launch/zed.launch">
-        <arg name="camera_name" value="zed"/>
-    </include>
-
-    <node name="image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg image) 4" output="screen"/>
-
-    <node name="depth_image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg depth_image) 6" output="screen"/>
-
-    <include ns="/rsu" file="$(find rsu_core)/launch/object_pose.launch">
-        <!-- Options -->
-        <arg name="use_cuda"            value="$(arg use_cuda)"/>
-        <arg name="enable_bbox_image"   value="$(arg enable_bbox_image)"/>
-        <!-- Consumed topics -->
-	<arg name="image"               value="$(arg image)_throttle"/>
-	<arg name="depth_image"         value="$(arg depth_image)_throttle"/>
-        <!-- Auxiliary -->
-        <arg name="max_age"             value="$(arg max_age)"/>
-    </include>
-
-    <!-- Start geofence for Start Area -->
-    <include file="$(find city_lmpc)/launch/geofence.launch">
-        <arg name="name"           value="geofence_start"/>
-        <arg name="box"            value="[-2.00, +1.50, -1.00, +2.50]"/>
-        <arg name="state"          value="/abconnect/obs/state"/>
-        <arg name="trigger_rate"   value="4"/>
-    </include>
-
-    <!-- Start geofence for Crash Area -->
-    <include file="$(find city_lmpc)/launch/geofence.launch">
-        <arg name="name"           value="geofence_crash"/>
-        <arg name="box"            value="[+0.00, -0.50, +1.00, +0.50]"/>
-        <arg name="state"          value="/abconnect/obs/state"/>
-        <arg name="trigger_rate"   value="4"/>
-    </include>
-
-    <!-- Start RSU -->
-    <node ns="$(arg name)" name="$(arg name)" pkg="city_lmpc" type="rsu_demo.py" output="screen">
-        <rosparam subst_value="true" >
-            demo_scenario: 0
-            track: arcs
-            s0: [-1.833, +2.299, +0.00]
-            vehicle_list:
-            - [obs, true]
-            - [ego, true]
-            - [onc, false]
-        </rosparam>
+    <!-- Connect to topic -->
+    <node name="ros_abconnnect__state" pkg="ros_abconnect" name="add_remote_topic.py" output="screen">
+        <arg name="role"    value="publisher">
+        <arg name="client"  value="corin">
+        <arg name="id"      value="90">
+        <arg name="topic"   value="/rsu/objectposes">
+        <arg name="type"    value="rsu_msgs/StampedObjectPoseArray">
     </node>
+
+    <!-- Start object detection & Aruco detection -->
+    <include file="$(find rsu_core)/launch/zed_main.launch"/>
 
 </launch>
