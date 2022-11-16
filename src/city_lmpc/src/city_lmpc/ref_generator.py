@@ -29,7 +29,7 @@ class RefGenerator():
     # [m] bumper-to-bumper distance between ego and obs vehicles
     DIST_OBS_TO_EGO = 0.4
     # don't update trajectories based on obs_state if new_obs_state-old_obs_state is within this value
-    S_OBS_SENSITIVITY = 0.5 # [m]
+    S_OBS_SENSITIVITY = 1.0 # [m]
 
     # Computed bumper-to-bumper safety distance
     L_SAFE = 2 * (LENGTH - BACKTOWHEEL) + N_SAFETY_LENGTHS * LENGTH

@@ -43,7 +43,7 @@ class VehicleInterface(SubProgram):
 
     def __init__(self, name: str, downstream: bool, master_track: Track):
 
-        self.timer = rospy.Rate(10)
+        self.timer = rospy.Rate(6)
 
         self.name = name
         self.state = VehicleState()

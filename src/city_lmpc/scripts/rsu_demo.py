@@ -240,7 +240,7 @@ class rsu_demo(Node):
 
         ego_local = self.ref_gen.state_to_local(ego.state)
 
-        # ego_local[0, 0] += 0.2
+        # ego_local[0, 0] += ego.state.v * ego.TIME_STEP * 5
         ego_state = self.ref_gen.local_to_state(ego_local)
         ref = self.ref_gen.get_ref(ego_state, onc.state, obs_state=obs.state)
 

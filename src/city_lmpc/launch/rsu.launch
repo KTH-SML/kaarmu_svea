@@ -30,13 +30,9 @@
         <arg name="camera_name" value="zed"/>
     </include>
 
-    <node name="image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg image) 10" output="screen"/>
+    <node name="image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg image) 4" output="screen"/>
 
-    <node name="depth_image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg depth_image) 10" output="screen"/>
-
-    <!--
-    <node name="objectposes_throttle" pkg="topic_tools" type="throttle" args="messages /rsu/objectposes 10" output="screen"/>
--->
+    <node name="depth_image_throttle" pkg="topic_tools" type="throttle" args="messages $(arg depth_image) 6" output="screen"/>
 
     <include ns="/rsu" file="$(find rsu_core)/launch/object_pose.launch">
         <!-- Options -->
