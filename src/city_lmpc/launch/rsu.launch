@@ -27,12 +27,12 @@
     </include>
 
     <!-- Connect to topic -->
-    <node name="ros_abconnnect__state" pkg="ros_abconnect" name="add_remote_topic.py" output="screen">
-        <arg name="role"    value="publisher">
-        <arg name="client"  value="corin">
-        <arg name="id"      value="90">
-        <arg name="topic"   value="/rsu/objectposes">
-        <arg name="type"    value="rsu_msgs/StampedObjectPoseArray">
+    <node name="ros_abconnnect__state" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <param name="role"    value="publisher"/>
+        <param name="client"  value="corin"/>
+        <param name="id"      value="90"/>
+        <param name="topic"   value="/rsu/objectposes"/>
+        <param name="type"    value="rsu_msgs/StampedObjectPoseArray"/>
     </node>
 
     <!-- Start object detection & Aruco detection -->

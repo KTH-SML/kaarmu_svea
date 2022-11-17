@@ -12,8 +12,6 @@
     <arg name="aruco_size"      value="0.106"/>
     <arg name="depth_image"     value="/zed/zed_node/depth/depth_registered"/>
     <arg name="image"           value="/zed/zed_node/rgb/image_rect_color"/>
-    <arg name="websocket_port"  value="9090"/>
-
 
     <!-- Nodes -->
 
