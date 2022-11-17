@@ -18,6 +18,8 @@
           args="$(arg map_file)"
           output="screen" />
 
+    <node name="rsu" pkg="city_lmpc" type="rsu.py" output="screen"/>
+
     <!-- Start ABConnect -->
     <include file="$(find ros_abconnect)/launch/abconnect.launch">
         <arg name="host"        value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
@@ -31,7 +33,7 @@
         <param name="role"    value="publisher"/>
         <param name="client"  value="corin"/>
         <param name="id"      value="90"/>
-        <param name="topic"   value="/rsu/objectposes"/>
+        <param name="topic"   value="/rsu/objectposes_out"/>
         <param name="type"    value="rsu_msgs/StampedObjectPoseArray"/>
     </node>
 

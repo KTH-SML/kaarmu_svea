@@ -32,7 +32,7 @@ class corin_demo(Node):
 
     SAFE_BOX = [-1.26, -7.15, +0.74, -5.15]
 
-    unsafe_since = None 
+    unsafe_since = None
 
     def __init__(self):
 
@@ -63,7 +63,7 @@ class corin_demo(Node):
                 self.master_track,
             ).start()
 
-        self.tf_buf = tf2_ros.Buffer() 
+        self.tf_buf = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buf)
 
         self.sub_objectposes = rospy.Subscriber(
@@ -95,17 +95,9 @@ class corin_demo(Node):
 
     def objectposes_cb(self, objectposes):
 
-        origin_frame = objectposes.header.frame_id 
-
-        if not self.tf_buf.can_transform(origin_frame, 'map', rospy.Time()):
-            print('CANNOT TRANSFORM')
-            return
-
         for objpose in filter(self.person_filter, objectposes.objects):
 
-            transform = self.tf_buf.lookup_transform(origin_frame, 'map', rospy.Time())
-            pose = do_transform_pose(objpose.pose, transform)
-
+            pose = objpose.pose
             pt = pose.pose.position.x, pose.pose.position.y
             ## print("PERSON!!!", pt)
 
@@ -113,7 +105,7 @@ class corin_demo(Node):
                 self.geofence_safe_cb(None)
                 return
 
-    @staticmethod 
+    @staticmethod
     def person_filter(objpose):
         return objpose.object.label == 'person'
 
@@ -170,12 +162,12 @@ class corin_demo(Node):
         elif (t - self.unsafe_since).to_sec() > 3:
             # Must have been safe for at least 3 sec
             ##  print("SAFE AGAIN")
-            self.unsafe_since = None 
+            self.unsafe_since = None
             return True
         else:
             """COMMENT
-            print("time since:", (t - self.unsafe_since).to_sec(), 
-                  "current time:", t, 
+            print("time since:", (t - self.unsafe_since).to_sec(),
+                  "current time:", t,
                   "unsafe time:", self.unsafe_since)
             """
             return False

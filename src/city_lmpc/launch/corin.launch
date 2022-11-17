@@ -27,12 +27,12 @@
     </include>
 
     <!-- Connect to topic -->
-    <node name="ros_abconnnect__state" pkg="ros_abconnect" name="add_remote_topic.py" output="screen">
-        <arg name="role"    value="subscriber">
-        <arg name="client"  value="rsu">
-        <arg name="id"      value="90">
-        <arg name="topic"   value="/rsu/objectposes">
-        <arg name="type"    value="rsu_msgs/StampedObjectPoseArray">
+    <node name="ros_abconnnect__state" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+       <param name="role"    value="subscriber"/>
+       <param name="client"  value="rsu"/>
+       <param name="id"      value="90"/>
+       <param name="topic"   value="/rsu/objectposes"/>
+       <param name="type"    value="rsu_msgs/StampedObjectPoseArray"/>
     </node>
 
     <!-- Start geofence for Start Area -->
