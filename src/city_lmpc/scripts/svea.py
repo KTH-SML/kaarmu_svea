@@ -96,7 +96,7 @@ class svea(Node):
         rospy.Timer(rospy.Duration(2), self.publish_initialpose)
 
         abconn.Publisher(
-            'rsu',
+            'corin',
             DECA[self.NAME] + 0,
             '/{veh}/state'.format(veh=self.NAME),
             VehicleStateMsg,
@@ -104,7 +104,7 @@ class svea(Node):
         )
 
         self.sub_target = abconn.Subscriber(
-            'rsu',
+            'corin',
             DECA[self.NAME] + 3,
             '/abconnect/rsu/{veh}/target'.format(veh=self.NAME),
             Point,
