@@ -37,7 +37,7 @@
         </group>
 
         <!-- Start vehicle -->
-        <node name="$(arg name)" pkg="city_lmpc" type="svea.py" output="screen">
+        <node name="$(arg name)" pkg="city_lmpc" type="svea_demo.py" output="screen">
             <param name="name"      value="$(arg name)"/>
             <param name="is_sim"    value="$(arg is_sim)"/>
 
