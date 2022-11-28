@@ -8,7 +8,7 @@ from tf2_geometry_msgs import do_transform_pose
 
 from rsu_msgs.msg import StampedObjectPoseArray
 
-class rsu_node(Node):
+class rsu_demo(Node):
 
     def __init__(self):
 
@@ -23,7 +23,7 @@ class rsu_node(Node):
             # buff_size=4*100,
         )
 
-        self.pub_objectposes = rospy.Subscriber(
+        self.pub_objectposes = rospy.Publisher(
             '/rsu/objectposes_out',
             StampedObjectPoseArray,
             queue_size=10,
@@ -40,7 +40,7 @@ class rsu_node(Node):
         for objpose in objectposes.objects:
 
             transform = self.tf_buf.lookup_transform(origin_frame, 'map', rospy.Time())
-            objpose.pose = do_transform_pose(objpose.pose, transform)
+            objpose.pose.pose = do_transform_pose(objpose.pose, transform).pose
 
         self.pub_objectposes.publish(objectposes)
 
