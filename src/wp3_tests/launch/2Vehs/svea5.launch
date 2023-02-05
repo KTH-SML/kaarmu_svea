@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Meta Data -->
+    <rosparam>
+        name: svea5
+        master: debby
+        clients: [debby, svea2, svea5]
+    </rosparam>
+
+    <!-- ABConnect Wrapper -->
+    <include file="$(find ros_abconnect)/launch/abconnect.launch">
+        <arg name="host" value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
+        <arg name="name" value="svea5"/>
+        <arg name="category" value="device"/>
+        <arg name="start_delay" value="5"/>
+    </include>
+
+    <!-- ABConnect Connectors -->
+    <node name="ros_abconnect__add_remote_topic__1ee168d2a7394c55b055a89eb33c2077" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: subscriber
+            client: debby
+            id: 1
+            topic: start
+            type: std_msgs/Empty
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__cf067670d79f41f182a9288375e141f0" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: subscriber
+            client: svea2
+            id: 3
+            topic: incoming
+            type: wp3_tests/Packet
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__1c1ba63e73384405ada7f1112335a439" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: publisher
+            client: svea2
+            id: 4
+            topic: outgoing
+            type: wp3_tests/Packet
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__6c4380ab92f3469ba377fd1ec45eeec0" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: publisher
+            client: svea5
+            id: 5
+            topic: outgoing
+            type: wp3_tests/Packet
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__0e1052b08a6c4797bba07b6af5bb77b6" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: subscriber
+            client: svea5
+            id: 5
+            topic: incoming
+            type: wp3_tests/Packet
+        </rosparam>
+    </node>
+</launch>

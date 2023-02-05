@@ -1,0 +1,23 @@
+master: debby
+topics:
+  - type: std_msgs/Empty
+    srcs:
+      - client: debby
+        topic: start
+    snks:
+      - client: svea2
+        topic: start
+      - client: svea5
+        topic: start
+  - type: wp3_tests/Packet
+    srcs:
+      - client: svea2
+        topic: outgoing
+      - client: svea5
+        topic: outgoing
+    snks:
+      - client: svea2
+        topic: incoming
+      - client: svea5
+        topic: incoming
+
