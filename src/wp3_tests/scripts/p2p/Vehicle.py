@@ -6,29 +6,12 @@ from threading import Timer
 from pathlib import Path
 
 import rospy
-from std_msgs.msg import Empty
 
 from wp3_tests.msg import Packet
 
 
-class Repeater(Timer):
-    def run(self):
-        while not self.finished.wait(self.interval):
-            self.function(*self.args, **self.kwargs)
-
 def random_bytes(n):
     return bytes(int(random() * 255) for _ in range(n))
-
-def start(node, *args, **kwargs):
-    with node(*args, **kwargs) as task:
-        task()
-
-def is_shutdown(exc):
-    if not any(exc):
-        return True
-    # if isinstance(...):
-    #     ...
-    return False
 
 def load_param(name, value=None):
     if value is None:
@@ -201,5 +184,7 @@ if __name__ == '__main__':
 
     ## Start node ##
 
-    start(Vehicle)
+    with Vehicle() as task:
+        task()
+
 
