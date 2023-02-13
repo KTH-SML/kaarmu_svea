@@ -88,26 +88,40 @@ class Transform:
     master: str
     clients: dict
     counter: int
+    variables: dict
 
     def __init__(self, fn):
 
         self.master = ''
         self.clients = {}
         self.counter = 0
+        self.variables = {}
 
+        master = 'master'
         topics = []
 
         with open(fn) as f:
             d = yaml.load(f, yaml.Loader)
-            self.master = d.get('master', 'master')
+
+            self.variables = d.get('variables', {})
+
+            master = d.get('master', master)
             topics += d.get('topics', [])
+
+        for name in self.variables:
+            assert name.startswith('$'), "Variables should start with '$'"
+
+        self.master = self._eval(master)
 
         for topic in topics:
             self._add_topic(**topic)
 
+    def _eval(self, name: str) -> str:
+        return self.variables.get(name, name)
+
     def save(self, dir: pathlib.Path):
 
-        for client in self.clients:
+        for client in map(self._eval, self.clients):
             content = self._generate_content(client)
             content = map(str.rstrip, content)
             with open(f'{dir}/{client}.launch', 'w') as f:
@@ -126,18 +140,18 @@ class Transform:
         for src in srcs:
             for snk in snks:
                 self._update_client_connections(
-                    host=src['client'],
+                    host=self._eval(src['client']),
                     role='publisher',
-                    client=snk['client'],
-                    topic=src['topic'],
-                    type=type,
+                    client=self._eval(snk['client']),
+                    topic=self._eval(src['topic']),
+                    type=self._eval(type),
                 )
                 self._update_client_connections(
-                    host=snk['client'],
+                    host=self._eval(snk['client']),
                     role='subscriber',
-                    client=src['client'],
-                    topic=snk['topic'],
-                    type=type,
+                    client=self._eval(src['client']),
+                    topic=self._eval(snk['topic']),
+                    type=self._eval(type),
                 )
                 self.counter += 1
 
@@ -198,10 +212,15 @@ class Transform:
 
 if __name__ == '__main__':
 
-    filename = sys.argv[1]
+    from argparse import ArgumentParser
 
-    dir = sys.argv[2] if len(sys.argv) > 2 else 'launch'
-    path = pathlib.Path(__file__).parent.parent / dir
+    parser = ArgumentParser()
+    parser.add_argument('filename')
+    parser.add_argument('directory', nargs='?', default='launch')
+
+    args = parser.parse_args()
+
+    path = pathlib.Path(__file__).parent.parent / args.directory
     path.mkdir(parents=True, exist_ok=True)
 
-    Transform(filename).save(path)
+    Transform(args.filename).save(path)

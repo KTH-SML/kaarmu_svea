@@ -16,22 +16,40 @@
     </include>
 
     <!-- ABConnect Connectors -->
-    <node name="ros_abconnect__add_remote_topic__97770bc4721244e1b4477a6a5f264c99" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+    <node name="ros_abconnect__add_remote_topic__c6bc7b840acf4ce6b37c6ce7f6d069d3" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
         <rosparam>
             role: publisher
             client: svea2
             id: 0
-            topic: start
-            type: std_msgs/Empty
+            topic: transition
+            type: std_msgs/String
         </rosparam>
     </node>
-    <node name="ros_abconnect__add_remote_topic__4978da591ba04682ae136881b27d351f" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+    <node name="ros_abconnect__add_remote_topic__b5924962efe14c25a7a5a700f2f4ed10" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
         <rosparam>
             role: publisher
             client: svea5
             id: 1
-            topic: start
-            type: std_msgs/Empty
+            topic: transition
+            type: std_msgs/String
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__96a53092d38c4819ad6bbe006eeb11ab" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: subscriber
+            client: svea2
+            id: 2
+            topic: incoming
+            type: wp3_tests/Packet
+        </rosparam>
+    </node>
+    <node name="ros_abconnect__add_remote_topic__93e16aed551e4fae8a03cbbb24510a30" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
+        <rosparam>
+            role: subscriber
+            client: svea5
+            id: 5
+            topic: incoming
+            type: wp3_tests/Packet
         </rosparam>
     </node>
 </launch>

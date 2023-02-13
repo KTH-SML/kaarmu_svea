@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="n"/>
+
+    <include file="$(dirname)/$(arg n)Vehs/$(env HOSTNAME).launch"/>
+
+    <node name="master" pkg="wp3_tests" type="MasterP2P.py" output="screen">
+        <rosparam>
+        </rosparam>
+    </node>
+
+</launch>
