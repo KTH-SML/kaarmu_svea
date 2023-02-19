@@ -13,6 +13,9 @@ source util/config.sh
 # https://stackoverflow.com/a/65912397
 remote_ros() { source util/remote_ros.sh; }; remote_ros
 
+# Install node modules in ros_abconnect
+( cd src/ros_abconnect/streamer && yarn install )
+
 # Install any dependencies that has been added by volume...
 rosdep install \
     --rosdistro "$ROSDISTRO" \
