@@ -2,95 +2,34 @@
 
 import json
 from queue import Queue, Empty
-from collections.abc import Callable
-from random import random
 from threading import Lock
-from contextlib import contextmanager, ContextDecorator
-from pathlib import Path
 from typing import List
 
 import rospy
 from std_msgs.msg import String
 
 from wp3_tests.msg import Packet
-
-class fragile(ContextDecorator):
-    """
-    Abortable contextmanagers
-
-    [source](https://stackoverflow.com/a/23665658)
-    """
-
-    class Break(Exception):
-      """Break out of the with statement"""
-
-    def __init__(self, fn):
-        self.fn = fn
-
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return exc[0] is self.Break
-
-def block_until(pred: Callable[[], bool], *args, **kwargs):
-    while not pred(*args, **kwargs): pass
-
-def random_bytes(n):
-    return bytes(int(random() * 255) for _ in range(n))
-
-def load_param(name, value=None):
-    if value is None:
-        assert rospy.has_param(name), f'Missing parameter "{name}"'
-    return rospy.get_param(name, value)
+from wp3_tests import (
+    STATE_STARTUP, STATE_STANDBY, STATE_READY, STATE_RUNNING, STATE_FINISHED, STATE_TRANSACK,
+    TRANS_NONE, TRANS_SETUP, TRANS_START, TRANS_STOP, TRANS_INIT, TRANS_DONE,
+    LOG_FIELD_SEP, LOG_ENTRY_SEP,
+    Shutdown,
+    load_param,
+    fragile,
+    checksum,
+    random_bytes,
+    assert_checksum,
+)
 
 def who_sent(msg: Packet) -> str:
     return msg.header.frame_id
 
-def calculate_checksum(data: bytes) -> int:
-    chk: int = 0
-    for byte in data:
-        chk ^= byte
-    return chk
-
-def assert_checksum(data: bytes, chk: int) -> bool:
-    for byte in data:
-        chk ^= byte
-    return chk == 0
-
-def new_timer(delta, cb):
-    dur = rospy.Duration(delta)
-    tmr = rospy.Timer(dur, cb)
-    return tmr
-
-
-STATE_STARTUP = 'STARTUP_S'
-STATE_STANDBY = 'STANDBY_S'
-STATE_READY = 'READY_S'
-STATE_RUNNING = 'RUNNING_S'
-STATE_FINISHED = 'FINISHED_S'
-
-# externally triggered
-TRANS_NONE = 'NONE_T'
-TRANS_SETUP = 'SETUP_T'
-TRANS_START = 'START_T'
-TRANS_STOP = 'STOP_T'
-
-# internally triggered
-TRANS_INIT = 'INIT_T'
-TRANS_DONE = 'SIM_T'
-
-LOG_FIELD_SEP = ','
-LOG_ENTRY_SEP = ';'
-
-
 class Vehicle:
 
-    state: str
+    trans: str          # latest transition request
+    state: str          # current state of vehicle
     _state_lock: Lock
+    _trans_queue: Queue
 
     safe: bool
     counter: int
@@ -102,6 +41,8 @@ class Vehicle:
     outgoing_tmr: rospy.Timer
     simulate_tmr: rospy.Timer
     compute_tmr: rospy.Timer
+
+    enable_incoming: bool
 
     def __init__(self):
 
@@ -122,65 +63,98 @@ class Vehicle:
 
         ## Control Flow Resources
 
+        self._timers = {}
+
         self._state_lock = Lock()
+
+        self._trans_queue = Queue()
 
         # incoming: {p1: [(t0, msg), (t1, msg), (t2, msg)],
         #            p2: [(t0, msg), (t1, msg), (t2, msg)],
         #            p3: [(t0, msg), (t1, msg), (t2, msg)]}
         self.incoming = {name: Queue() for name in self.PEERS}
 
-    @fragile
-    @contextmanager
-    def switch_to(self, state: str):
-        self._state_lock.acquire()
+        ## State variables
 
-        # do not execute transition if we are already in state
-        if self.state == state: raise fragile.Break
+        self.safe = False
+        self.counter = 0
+        self.x = 0
+        self.v = 0
 
-        self.state = state
-        yield
-        rospy.loginfo('Switch to %s', self.state)
+    def __enter__(self):
 
-        self._state_lock.release()
+        self.state = STATE_STARTUP
+        self.put_transition(TRANS_INIT)
 
-    def wait_for_state(self, state: str):
-        return block_until(lambda: self.state == state)
+        return self.main
+
+    def __exit__(self, *_):
+
+        for tmr in self._timers.values():
+            tmr.shutdown()
+
+        rospy.loginfo('EXITING')
+
+    def new_timer(self, name, delta, cb):
+        if name in self._timers:
+            self._timers[name].shutdown()
+        dur = rospy.Duration(delta)
+        tmr = rospy.Timer(dur, cb)
+        self._timers[name] = tmr
+        return tmr
+
+    def put_transition(self, trans: str):
+        self._trans_queue.put(String(trans))
 
     def transition(self, msg: String):
 
         # partition the message at "=" (divide up the string into
         # everything left/right of "=") and apply strip on each part
-        trans, _, value = map(str.strip, msg.data.partition('='))
-        t = (self.state, trans)
+        self.trans, _, value = map(str.strip, msg.data.partition('='))
+        t = (self.state, self.trans)
 
         ## NONE transition
 
-        if trans == TRANS_NONE: return # do nothing
+        skip = False
+        skip |= self.trans == TRANS_NONE # explicitly do nothing
+        skip |= self.state == STATE_TRANSACK # middle of transition
+
+        if skip: return
 
         ## STARTUP -> STANDBY
 
-        if t == (STATE_STARTUP, TRANS_INIT):
-            with self.switch_to(STATE_STANDBY):
+        elif t == (STATE_STARTUP, TRANS_INIT):
+            with switch_to(self, STATE_STANDBY):
 
                 self.outgoing_pub = rospy.Publisher('outgoing', Packet, queue_size=1)
-                self.outgoing_tmr = new_timer(1/self.STANDBY_FREQ, lambda _: self.empty_sender())
+                self.outgoing_tmr = self.new_timer('outgoing', 1/self.STANDBY_FREQ, lambda _: self.empty_sender())
 
-                self.master_sub = rospy.Subscriber('master', String, self.transition)
-                self.incoming_sub = rospy.Subscriber('incoming', Packet, self.receiver)
+                self.enable_incoming = False
+                self.incoming_sub = rospy.Subscriber('incoming',
+                                                     Packet,
+                                                     self.receiver)
+                self.master_sub = rospy.Subscriber('transition',
+                                                   String,
+                                                   self._trans_queue.put)
 
                 # check that at every peer has sent at least one message
                 peers = self.PEERS[:]
                 while peers:
+                    if rospy.is_shutdown(): raise Shutdown
+                    rospy.sleep(0.1)
+
                     peer = peers.pop(0)
                     if not self.incoming[peer].qsize():
                         peers.append(peer)
 
-                rospy.loginfo('received packet from all peers')
+                rospy.loginfo('Connected to all peers')
+
+                self.put_transition(TRANS_NONE)
 
         ## STANDBY -> READY
 
-        if t == (STATE_STANDBY, TRANS_SETUP):
-            with self.switch_to(STATE_READY):
+        elif t == (STATE_STANDBY, TRANS_SETUP):
+            with switch_to(self, STATE_READY):
 
                 # self.conf: Dict[str, Any] = {
                 #     'INIT_POS': ...,
@@ -203,75 +177,94 @@ class Vehicle:
                     self.conf['COMP_TIME']
                     * len(self.PEERS)**self.conf['COMP_ORDR']
                 )
+                self.enable_incoming = True
 
         ## READY -> RUNNING
 
-        if t == (STATE_READY, TRANS_START):
-            with self.switch_to(STATE_RUNNING):
+        elif t == (STATE_READY, TRANS_START):
+            with switch_to(self, STATE_RUNNING):
 
-                self.outgoing_tmr.shutdown()
+                self.outgoing_tmr = self.new_timer('outgoing',
+                                                   1/self.conf['DATA_FREQ'],
+                                                   lambda _: self.random_sender(self.conf['DATA_SIZE']))
 
-                self.outgoing_tmr = new_timer(1/self.conf['DATA_FREQ'],
-                                              lambda _: self.random_sender(self.conf['DATA_SIZE']))
+                self.compute_tmr = self.new_timer('compute',
+                                                  self.conf['COMP_TIME'],
+                                                  self.compute)
 
-                self.compute_tmr = new_timer(self.conf['COMP_TIME'],
-                                             self.compute)
-
-                self.simulate_tmr = new_timer(self.conf['TIME_STEP'],
-                                              self.simulate)
+                self.simulate_tmr = self.new_timer('simulate',
+                                                   self.conf['TIME_STEP'],
+                                                   self.simulate)
 
         ## RUNNING -> FINISHED
 
-        if t == (STATE_RUNNING, TRANS_DONE):
-            with self.switch_to(STATE_FINISHED):
+        elif t == (STATE_RUNNING, TRANS_DONE):
+            with switch_to(self, STATE_FINISHED):
 
-                self.outgoing_tmr.shutdown()
-                self.simulate_tmr.shutdown()
                 self.compute_tmr.shutdown()
+                self.simulate_tmr.shutdown()
 
-                self.outgoing_tmr = new_timer(1/self.STANDBY_FREQ, lambda _: self.log_sender(self.log))
+                self.outgoing_tmr = self.new_timer('outgoing',
+                                                   1/self.STANDBY_FREQ,
+                                                   lambda _: self.log_sender(self.log))
+
+                self.put_transition(TRANS_NONE)
 
         ## FINISHED -> STANDBY
 
-        if t == (STATE_FINISHED, TRANS_STOP):
-            with self.switch_to(STATE_STANDBY):
+        elif t == (STATE_FINISHED, TRANS_STOP):
+            with switch_to(self, STATE_STANDBY):
 
-                self.outgoing_tmr.shutdown()
-                self.outgoing_tmr = new_timer(1/self.STANDBY_FREQ, lambda _: self.empty_sender())
+                self.outgoing_tmr = self.new_timer('outgoing',
+                                                   1/self.STANDBY_FREQ,
+                                                   lambda _: self.empty_sender())
 
         ## RUNNING -> STANDBY
 
-        if t == (STATE_RUNNING, TRANS_STOP):
-            with self.switch_to(STATE_STANDBY):
+        elif t == (STATE_RUNNING, TRANS_STOP):
+            with switch_to(self, STATE_STANDBY):
 
-                self.outgoing_tmr.shutdown()
-                self.outgoing_tmr = new_timer(1/self.STANDBY_FREQ, lambda _: self.empty_sender())
+                self.compute_tmr.shutdown()
+                self.simulate_tmr.shutdown()
+
+                self.outgoing_tmr = self.new_timer('outgoing',
+                                                   1/self.STANDBY_FREQ,
+                                                   lambda _: self.empty_sender())
 
         ## READY -> STANDBY
 
-        if t == (STATE_READY, TRANS_STOP):
-            with self.switch_to(STATE_STANDBY): pass
+        elif t == (STATE_READY, TRANS_STOP):
+            with switch_to(self, STATE_STANDBY): pass
 
-        rospy.logerr('ERROR: Invalid transition %s to %s', t[1], t[0])
+        ## STANDBY -> STANDBY
 
-    def __enter__(self):
-        self.state = STATE_STARTUP
-        self.transition(String(TRANS_INIT))
-        return self.main
+        elif t == (STATE_STANDBY, TRANS_STOP):
+            with switch_to(self, STATE_STANDBY): pass
 
-    def __exit__(self, *_):
-        rospy.loginfo('EXITING')
+        ## Invalid transition
+
+        else:
+
+            rospy.logerr('ERROR: Invalid transition %s from state %s', t[1], t[0])
 
     def main(self):
-        rospy.spin()
+        while not rospy.is_shutdown():
+            # we try-catch to not lock ourselves during get operation
+            # that way we can check if the node is shutdown every 1 sec
+            try:
+                msg = self._trans_queue.get(timeout=1)
+                self.transition(msg)
+            except Empty:
+                pass
 
     def sender(self, data: bytes):
         msg = Packet()
         msg.header.frame_id = self.NAME
         msg.header.stamp = rospy.Time.now()
+        msg.state = self.state
         msg.count = self.counter
         msg.data = data
-        msg.chk = calculate_checksum(msg.data)
+        msg.chk = checksum(msg.data)
         self.outgoing_pub.publish(msg)
         self.counter += 1
 
@@ -283,34 +276,38 @@ class Vehicle:
         self.sender(data)
 
     def log_sender(self, log: List[str]):
-        data = LOG_ENTRY_SEP.join(log).encode('utf-8')
+        data = bytes(LOG_ENTRY_SEP.join(log).encode('ascii'))
         self.sender(data)
 
     def receiver(self, msg: Packet):
+
         now = rospy.Time.now()
+
+        self.incoming[who_sent(msg)].put((now, msg))
+
+        if self.state != STATE_RUNNING:
+            return
 
         headway = str(self.x / self.v)
         sender = who_sent(msg)
         sent = str(msg.header.stamp)
         arrival = str(now)
         count = str(msg.count)
-        data = msg.data.hex()
-        chk = str(msg.chk)
+        valid = str(assert_checksum(msg.data, msg.chk))
         safe = str(self.safe)
 
-        fields = [sender, sent, arrival, count, data, chk, headway, safe]
+        fields = [sender, sent, arrival, count, valid, headway, safe]
         self.log.append(LOG_FIELD_SEP.join(fields))
-
-        self.incoming[who_sent(msg)].put((now, msg))
 
         # we switch here because then we're assured safety breach is logged
         # at least once
         if not safe:
-            self.transition(STATE_FINISHED)
+            self.put_transition(STATE_FINISHED)
 
     def simulate(self, _):
         self.x -= self.v * self.dt
         self.x = max(self.x, 0)
+        rospy.loginfo(f'{self.x = }')
 
     def compute(self, _):
         start = rospy.Time.now()
@@ -318,7 +315,8 @@ class Vehicle:
         # it doesn't really make sense to do/wait to do computation on
         # data that hasn't reach us yet. So (for each peer) we pick up
         # the first packet was sent at t > target_time
-        target_time = start - self.conf['COMP_TIME']/2
+        comp_time = rospy.Duration(self.conf['COMP_TIME']/2)
+        target_time = start - comp_time
         headway = rospy.Duration(self.x / self.v)
         latency = {}
         try:
@@ -327,14 +325,68 @@ class Vehicle:
                 arrival, msg = self.incoming[peer].get(timeout=0.1)
                 sent = msg.header.stamp
                 latency[peer] = arrival - msg.header.stamp
-                if sent > target_time:
-                    peers.remove(peer)
+                if not sent > target_time:
+                    # put peer back and try to get a newer message
+                    # (due to above stated reason)
+                    peers.append(peer)
         except Empty:
             # for some peer, we haven't received data from time (target_time)
             # i.e. we cannot compute the safety-critical function and are unsafe
             self.safe = False
         else:
-            self.safe = headway > max(latency.values()) + self.compute_time
+            compute_time = rospy.Duration(self.compute_time)
+            self.safe = headway > max(latency.values()) + compute_time
+
+        if not self.safe:
+            self.put_transition(TRANS_DONE)
+
+class switch_to(fragile):
+
+    node: Vehicle
+
+    def __init__(self, node, state):
+        self.node = node
+        self.state = state
+
+    def __enter__(self):
+
+        self = super().__enter__()
+
+        self.node._state_lock.acquire()
+
+        # do not execute transition if we are already in state
+        if self.node.state == self.state:
+            rospy.logerr('Already in state %s', self.state)
+            raise fragile.Break
+
+        self.node.state = STATE_TRANSACK
+
+    def __exit__(self, *exc):
+
+        self.node._state_lock.release()
+
+        # wait until master releases transition
+        #
+        # processing of transitions (ie state switches)
+        # will only happen in the main thread.
+        # When in TRANSACK we want to wait with completing
+        # the transition until we get NONE.
+        # Since this is part of state switching (i.e. main thread)
+        # we don't have another thread receiving and processing
+        # transition requests, so we cannot simply `put_transition`
+        # but we actually need to `_trans_queue.get` and call `transition`
+        # ourselves.
+        #
+        # this mechanism is good for those states that release the
+        # transition themselves as well, e.g. TRANS_INIT.
+        while self.node.trans != TRANS_NONE:
+            msg = self.node._trans_queue.get()
+            self.node.transition(msg)
+
+        self.node.state = self.state
+        rospy.loginfo('Switched to %s', self.state)
+
+        return super().__exit__(*exc)
 
 if __name__ == '__main__':
 

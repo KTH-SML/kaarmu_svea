@@ -3,11 +3,42 @@
 
     <arg name="n"/>
 
-    <include file="$(dirname)/$(arg n)Vehs/$(env HOSTNAME).launch"/>
+    <include file="$(dirname)/abconnect.launch">
+        <arg name="n" value="$(arg n)"/>
+    </include>
 
-    <node name="master" pkg="wp3_tests" type="MasterP2P.py" output="screen">
-        <rosparam>
-        </rosparam>
-    </node>
+    <rosparam>
+        init_pos:  # [m]
+          - 30
+        targ_vel:  # [m/s]
+          - 5
+          - 10
+          - 20
+        time_step: # [s]
+          - 0.1
+        data_size: # [kB]
+          - 1
+          - 10
+          # - 100
+          # - 1000
+        data_freq: # [Hz]
+          - 10
+          - 30
+          - 50
+        comp_time: # [s]
+          - 0.1
+          - 0.2
+          - 0.4
+          - 0.8
+          - 1.2
+        comp_ordr: # unitless
+          - 0
+          - 1
+          - 2
+    </rosparam>
+    <param name="log_dir" value="$(find wp3_tests)/log"/>
+    <param name="usr_inp" value="false"/>
+
+    <node name="master" pkg="wp3_tests" type="MasterP2P.py" output="screen"/>
 
 </launch>

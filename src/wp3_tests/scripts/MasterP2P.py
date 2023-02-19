@@ -1,39 +1,24 @@
 #! /usr/bin/env python3
 
-from collections.abc import Callable
-from pathlib import Path
-from queue import Empty, Queue
 import itertools
 import json
+from pathlib import Path
+from queue import Empty, Queue
 
 import rospy
 from std_msgs.msg import String
 
 from wp3_tests.msg import Packet
-
-def block_until(pred: Callable[[], bool], *args, **kwargs):
-    while not pred(*args, **kwargs): pass
-
-def load_param(name, value=None):
-    if value is None:
-        assert rospy.has_param(name), f'Missing parameter "{name}"'
-    return rospy.get_param(name, value)
+from wp3_tests import (
+    STATE_STARTUP, STATE_STANDBY, STATE_READY, STATE_RUNNING, STATE_FINISHED, STATE_TRANSACK,
+    TRANS_NONE, TRANS_SETUP, TRANS_START, TRANS_STOP,
+    SyncDict,
+    load_param,
+    blocker,
+)
 
 def who_sent(msg: Packet) -> str:
     return msg.header.frame_id
-
-
-STATE_STARTUP = 'STARTUP_S'
-STATE_STANDBY = 'STANDBY_S'
-STATE_READY = 'READY_S'
-STATE_RUNNING = 'RUNNING_S'
-STATE_FINISHED = 'FINISHED_S'
-
-TRANS_NONE = 'NONE_T'
-TRANS_SETUP = 'SETUP_T'
-TRANS_START = 'START_T'
-TRANS_STOP = 'STOP_T'
-
 
 class Master:
 
@@ -62,13 +47,14 @@ class Master:
         self.COMP_ORDR_LIST = load_param('comp_ordr')
 
         self.LOG_DIR = Path(load_param('log_dir')) / str(rospy.Time.now())
+        self.USR_INP = load_param('usr_inp', False)
 
         ## Control Flow Resources
 
-        # incoming: {p1: [(t0, msg), (t1, msg), (t2, msg)],
-        #            p2: [(t0, msg), (t1, msg), (t2, msg)],
-        #            p3: [(t0, msg), (t1, msg), (t2, msg)]}
-        self.incoming = {name: Queue() for name in self.AGENTS}
+        # incoming: {p1: (t, msg),
+        #            p2: (t, msg),
+        #            p3: (t, msg)}
+        self.incoming = {}
 
     def __enter__(self):
 
@@ -91,7 +77,10 @@ class Master:
             'COMP_ORDR',
         ]
 
+        self._trans = TRANS_NONE
         self.transition_pub = rospy.Publisher('transition', String, queue_size=10)
+        self.transition_keep_alive_tmr = rospy.Timer(rospy.Duration(1/5),
+                                                     lambda _: self.transition_pub.publish(String(self._trans)))
 
         self.incoming_sub = rospy.Subscriber('incoming', Packet, self.receiver)
 
@@ -117,72 +106,85 @@ class Master:
 
         for i, params in enumerate(self.program):
 
+            ## wait for standby
+            self.wait_for_state_all(STATE_STANDBY)
+
             ## prepare test-configuration params
-            rospy.loginfo(f'Preparing test {i:03}/{N:03}')
+            if self.USR_INP:
+                rospy.loginfo(f'Press enter to start test {i:03}/{N:03}...')
+                input()
+            else:
+                rospy.loginfo(f'Starting test {i:03}/{N:03}')
             conf = dict(zip(self.names, params))
             conf_s = json.dumps(conf)
 
-            ## wait for standby
-            for agent in self.AGENTS:
-                self.wait_for_agent_state(agent, STATE_STANDBY)
-            rospy.loginfo(f'Agents in {STATE_STANDBY} state')
-
             ## trans. standby -> ready w/ params
-            self.transition_all_agents(f'{TRANS_SETUP}={conf_s}')
-
-            ## wait for ready
-            for agent in self.AGENTS:
-                self.wait_for_agent_state(agent, STATE_READY)
-            rospy.loginfo(f'Agents in {STATE_READY} state')
+            self.transition_all_agents_and_wait(f'{TRANS_SETUP}={conf_s}', STATE_READY)
 
             ## trans. ready -> running
-            self.transition_all_agents(TRANS_START)
+            self.transition_all_agents_and_wait(TRANS_START, STATE_RUNNING)
 
-            ## wait for finished
-            for agent in self.AGENTS:
-                self.wait_for_agent_state(agent, STATE_FINISHED)
-            rospy.loginfo(f'Agents in {STATE_FINISHED} state')
+            ## wait for running -> finished
+            print('waiting for finished')
+            self.wait_for_state_all(STATE_FINISHED)
+            print('reached finished')
 
             ## save to log file w/ params
             # create directory for this specific test
             dir = self.LOG_DIR / f'test_{i}'
             dir.mkdir(parents=True, exist_ok=True)
+            rospy.loginfo(f'Saving test logs to {dir}')
             # save test-configuration
-            with open(dir / 'conf') as f:
+            with open(dir / 'conf', 'w') as f:
                 f.write(conf_s)
+                rospy.loginfo('Logged test configuration')
             # save output for each agent
             for agent in self.AGENTS:
                 try:
-                    _, msg = self.incoming[agent].get(timeout=5)
-                except Empty as e:
-                    e.add_note(f'Lost connection to {agent}')
+                    _, msg = self.incoming[agent]
+                except KeyError as e:
+                    print(f'ERROR: Lost connection to {agent}')
                     raise e
                 # dump the log data in agent-specific file
                 # each message contain the logs for this entire test
-                # encoding: utf-8
+                # encoding: ascii
                 with open(dir / agent, 'wb') as f:
                     f.write(msg.data)
+                rospy.loginfo(f'Logged {agent}')
 
-            # trans. finished -> standby
+            ## trans. finished -> standby
+            self.transition_all_agents_and_wait(TRANS_STOP, STATE_STANDBY)
 
-    def wait_for_agent_state(self, agent: str, state: str) -> None:
-        def pred() -> bool:
+    def wait_for_agent_state(self, agent: str, state: str):
+        @blocker
+        def wait():
             try:
-                _, msg = self.incoming[agent].get_nowait()
+                _, msg = self.incoming[agent]
                 return state == msg.state
-            except Empty:
+            except KeyError:
                 return False
-        return block_until(pred)
+        return wait()
 
-    def transition_all_agents(self, trans: str) -> None:
-        msg = String()
-        msg.data = trans
-        self.transition_pub.publish(msg)
+    def wait_for_state_all(self, state: str):
+        for agent in self.AGENTS:
+            self.wait_for_agent_state(agent, state)
+        rospy.loginfo(f'Agents in {state} state')
+
+    def transition_all_agents_and_wait(self, trans: str, state: str) -> None:
+        # tell which transition we want to do
+        self._trans = trans
+        # vehicles have acknowledge the transition and will begin
+        # the transition
+        self.wait_for_state_all(STATE_TRANSACK)
+        # the vehicles wait to release the transition until NONE is sent
+        self._trans = TRANS_NONE
+        # wait for the vehicle to recognize the transition release
+        self.wait_for_state_all(state)
 
     def receiver(self, msg: Packet):
         # arrival time is not really interesting in master but I'll keep for consistency
         now = rospy.Time.now()
-        self.incoming[who_sent(msg)].put((now, msg))
+        self.incoming[who_sent(msg)] = (now, msg)
 
 if __name__ == '__main__':
 

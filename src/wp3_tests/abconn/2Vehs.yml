@@ -10,9 +10,9 @@ topics:
         topic: transition
     snks:
       - client: $veh1
-        topic: master
+        topic: transition
       - client: $veh2
-        topic: master
+        topic: transition
   - type: wp3_tests/Packet
     srcs:
       - client: $veh1
@@ -26,4 +26,3 @@ topics:
         topic: incoming
       - client: $veh2
         topic: incoming
-

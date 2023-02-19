@@ -2,7 +2,6 @@
 
 import uuid
 import yaml
-import sys
 import pathlib
 
 
@@ -48,12 +47,20 @@ class Printer:
         yield '</launch>'
 
     @staticmethod
-    def insert_node(*content: str, pkg: str, type: str, name: str = '', output: str = 'screen'):
-        if not name:
-            fname = pathlib.Path(type)
-            name = f'{pkg}__{fname.stem}__{unique_name()}'
+    def insert_node(*content: str, **attrs: str):
+        _attrs = {
+            'name': '',
+            'output': 'screen',
+        }
+        _attrs.update(attrs)
+        assert 'pkg' in _attrs, 'Missing "pkg" attribute'
+        assert 'type' in _attrs, 'Missing "type" attribute'
+        if not _attrs['name']:
+            fname = pathlib.Path(_attrs['type'])
+            _attrs['name'] = f'{_attrs["pkg"]}__{fname.stem}__{unique_name()}'
 
-        yield f'<node name="{name}" pkg="{pkg}" type="{type}" output="{output}">'
+        attr_list = ' '.join(f'{key}="{val}"' for key, val in _attrs.items())
+        yield f'<node {attr_list}>'
         yield from Printer.indent(*content)
         yield '</node>'
 
@@ -127,6 +134,19 @@ class Transform:
             with open(f'{dir}/{client}.launch', 'w') as f:
                 f.write('\n'.join(content))
 
+        return self
+
+    def print(self):
+        for host, connections in self.clients.items():
+            print(f'[{host}]')
+            for connection in connections:
+                if connection['role'] == 'publisher':
+                    print(f'  ({connection["id"]:02}) {connection["topic"]}: {connection["type"]} -> {connection["client"]}')
+                else:
+                    print(f'  ({connection["id"]:02}) {connection["topic"]}: {connection["type"]} <- {connection["client"]}')
+
+        return self
+
     def _client_category(self, client: str):
         if client.endswith('device'):
             return 'device'
@@ -145,6 +165,7 @@ class Transform:
                     client=self._eval(snk['client']),
                     topic=self._eval(src['topic']),
                     type=self._eval(type),
+                    delay='0',
                 )
                 self._update_client_connections(
                     host=self._eval(snk['client']),
@@ -152,10 +173,11 @@ class Transform:
                     client=self._eval(src['client']),
                     topic=self._eval(snk['topic']),
                     type=self._eval(type),
+                    delay='0.5',
                 )
                 self.counter += 1
 
-    def _update_client_connections(self, host, role, client, topic, type):
+    def _update_client_connections(self, host, role, client, topic, type, delay):
         connections = self.clients.get(host, [])
         connections.append({
             'role': role,
@@ -163,6 +185,7 @@ class Transform:
             'id': self.counter,
             'topic': topic,
             'type': type,
+            'delay': delay,
         })
         self.clients[host] = connections
 
@@ -190,23 +213,31 @@ class Transform:
         )
 
     def _generate_include(self, host, name, category, start_delay):
+        # yield from Printer.insert_include(
+        #     *Printer.insert_arg(name='host', value=host),
+        #     *Printer.insert_arg(name='name', value=name),
+        #     *Printer.insert_arg(name='category', value=category),
+        #     *Printer.insert_arg(name='start_delay', value=start_delay),
+        #     file='$(find ros_abconnect)/launch/abconnect.launch',
+        # )
+        n = len(self.clients) - 1
         yield from Printer.insert_include(
-            *Printer.insert_arg(name='host', value=host),
-            *Printer.insert_arg(name='name', value=name),
-            *Printer.insert_arg(name='category', value=category),
-            *Printer.insert_arg(name='start_delay', value=start_delay),
-            file='$(find ros_abconnect)/launch/abconnect.launch',
+            *Printer.insert_arg(name='n', value=str(n)),
+            file='$(find wp3_tests)/launch/abconnect.launch',
         )
 
     def _generate_connections(self, connections):
         for conn in connections:
             yield from self._generate_remote_topic(**conn)
 
-    def _generate_remote_topic(self, role, client, id, topic, type):
+    def _generate_remote_topic(self, role, client, id, topic, type, delay=0):
+        attrs = {
+            'pkg': 'ros_abconnect',
+            'type': 'add_remote_topic.py',
+        }
         yield from Printer.insert_node(
-            *Printer.insert_rosparam(role=role, client=client, id=id, topic=topic, type=type),
-            pkg='ros_abconnect',
-            type='add_remote_topic.py',
+            *Printer.insert_rosparam(role=role, client=client, id=id, topic=topic, type=type, delay=delay),
+            **attrs,
         )
 
 
@@ -223,4 +254,6 @@ if __name__ == '__main__':
     path = pathlib.Path(__file__).parent.parent / args.directory
     path.mkdir(parents=True, exist_ok=True)
 
-    Transform(args.filename).save(path)
+    Transform(args.filename).print().save(path)
+
+
