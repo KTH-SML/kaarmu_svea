@@ -272,9 +272,6 @@ class Vehicle:
         self.sender(bytes())
 
     def random_sender(self, data_size):
-
-        if self.state != STATE_RUNNING: return
-
         data = random_bytes(data_size * 1000)
         self.sender(data)
 
