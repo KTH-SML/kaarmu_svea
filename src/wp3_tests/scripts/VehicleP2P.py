@@ -319,6 +319,10 @@ class Vehicle:
         target_time = start - comp_time
         headway = rospy.Duration(self.x / self.v)
         latency = {}
+        # this is so we can do a trick in the end of `compute` to make
+        # sure we don't put TRANS_DONE multiple times in case `compute`
+        # is faster than the transitions.
+        safe = self.safe
         try:
             while peers:
                 peer = peers.pop(0)
@@ -332,13 +336,15 @@ class Vehicle:
         except Empty:
             # for some peer, we haven't received data from time (target_time)
             # i.e. we cannot compute the safety-critical function and are unsafe
-            self.safe = False
+            safe = False
         else:
             compute_time = rospy.Duration(self.compute_time)
-            self.safe = headway > max(latency.values()) + compute_time
+            safe = headway > max(latency.values()) + compute_time
 
-        if not self.safe:
+        if not safe and self.safe:
             self.put_transition(TRANS_DONE)
+
+        self.safe = safe
 
 class switch_to(fragile):
 
