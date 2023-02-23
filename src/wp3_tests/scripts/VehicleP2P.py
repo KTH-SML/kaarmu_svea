@@ -272,7 +272,7 @@ class Vehicle:
         self.sender(bytes())
 
     def random_sender(self, data_size):
-        data = random_bytes(data_size * 1000)
+        data = random_bytes(int(data_size * 1000))
         self.sender(data)
 
     def log_sender(self, log: List[str]):
