@@ -299,15 +299,10 @@ class Vehicle:
         fields = [sender, sent, arrival, count, valid, headway, safe]
         self.log.append(LOG_FIELD_SEP.join(fields))
 
-        # we switch here because then we're assured safety breach is logged
-        # at least once
-        if not safe:
-            self.put_transition(STATE_FINISHED)
-
     def simulate(self, _):
         self.x -= self.v * self.dt
         self.x = max(self.x, 0)
-        rospy.loginfo(f'{self.x = }')
+        rospy.loginfo(f'{self.state} (safe={self.safe}): x = {self.x}')
 
     def compute(self, _):
         start = rospy.Time.now()
@@ -322,7 +317,7 @@ class Vehicle:
         # this is so we can do a trick in the end of `compute` to make
         # sure we don't put TRANS_DONE multiple times in case `compute`
         # is faster than the transitions.
-        safe = self.safe
+        safety_check = self.safe
         try:
             while peers:
                 peer = peers.pop(0)
@@ -336,15 +331,15 @@ class Vehicle:
         except Empty:
             # for some peer, we haven't received data from time (target_time)
             # i.e. we cannot compute the safety-critical function and are unsafe
-            safe = False
+            safety_check = False
         else:
             compute_time = rospy.Duration(self.compute_time)
-            safe = headway > max(latency.values()) + compute_time
+            safety_check = headway > max(latency.values()) + compute_time
 
-        if not safe and self.safe:
+        if self.safe and not safety_check:
             self.put_transition(TRANS_DONE)
 
-        self.safe = safe
+        self.safe = safety_check
 
 class switch_to(fragile):
 
