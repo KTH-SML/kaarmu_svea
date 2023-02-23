@@ -272,6 +272,9 @@ class Vehicle:
         self.sender(bytes())
 
     def random_sender(self, data_size):
+
+        if self.state != STATE_RUNNING: return
+
         data = random_bytes(data_size * 1000)
         self.sender(data)
 
@@ -300,11 +303,19 @@ class Vehicle:
         self.log.append(LOG_FIELD_SEP.join(fields))
 
     def simulate(self, _):
+
+        if self.state != STATE_RUNNING:
+            return
+
         self.x -= self.v * self.dt
         self.x = max(self.x, 0)
         rospy.loginfo(f'{self.state} (safe={self.safe}): x = {self.x}')
 
     def compute(self, _):
+
+        if self.state != STATE_RUNNING:
+            return
+
         start = rospy.Time.now()
         peers = self.PEERS[:]
         # it doesn't really make sense to do/wait to do computation on
