@@ -32,7 +32,6 @@ class Vehicle:
     _trans_queue: Queue
 
     safe: bool
-    counter: int
     x: float
     v: float
 
@@ -77,7 +76,6 @@ class Vehicle:
         ## State variables
 
         self.safe = False
-        self.counter = 0
         self.x = 0
         self.v = 0
 
@@ -262,11 +260,9 @@ class Vehicle:
         msg.header.frame_id = self.NAME
         msg.header.stamp = rospy.Time.now()
         msg.state = self.state
-        msg.count = self.counter
         msg.data = data
         msg.chk = checksum(msg.data)
         self.outgoing_pub.publish(msg)
-        self.counter += 1
 
     def empty_sender(self):
         self.sender(bytes())
@@ -292,11 +288,10 @@ class Vehicle:
         sender = who_sent(msg)
         sent = str(msg.header.stamp)
         arrival = str(now)
-        count = str(msg.count)
         valid = str(assert_checksum(msg.data, msg.chk))
         safe = str(self.safe)
 
-        fields = [sender, sent, arrival, count, valid, headway, safe]
+        fields = [sender, sent, arrival, valid, headway, safe]
         self.log.append(LOG_FIELD_SEP.join(fields))
 
     def simulate(self, _):

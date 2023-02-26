@@ -4,6 +4,7 @@ import itertools
 import json
 from pathlib import Path
 from queue import Empty, Queue
+from re import split
 
 import rospy
 from std_msgs.msg import String
@@ -12,7 +13,6 @@ from wp3_tests.msg import Packet
 from wp3_tests import (
     STATE_STARTUP, STATE_STANDBY, STATE_READY, STATE_RUNNING, STATE_FINISHED, STATE_TRANSACK,
     TRANS_NONE, TRANS_SETUP, TRANS_START, TRANS_STOP,
-    SyncDict,
     load_param,
     blocker,
 )
@@ -109,6 +109,9 @@ class Master:
             ## wait for standby
             self.wait_for_state_all(STATE_STANDBY)
 
+            # heuristic cooldown sleep for the agents
+            rospy.sleep(1)
+
             ## prepare test-configuration params
             if self.USR_INP:
                 rospy.loginfo(f'Press enter to start test {i:03}/{N:03}...')
@@ -116,6 +119,7 @@ class Master:
             else:
                 rospy.loginfo(f'Starting test {i:03}/{N:03}')
             conf = dict(zip(self.names, params))
+            conf.update(AGENTS=self.AGENTS)
             conf_s = json.dumps(conf)
 
             ## trans. standby -> ready w/ params
@@ -131,7 +135,7 @@ class Master:
 
             ## save to log file w/ params
             # create directory for this specific test
-            dir = self.LOG_DIR / f'test_{i}'
+            dir = self.LOG_DIR / f'test_{i:0{len(str(N-1))}}'
             dir.mkdir(parents=True, exist_ok=True)
             rospy.loginfo(f'Saving test logs to {dir}')
             # save test-configuration
