@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="n"/>
+    <arg name="start_rosbridge"    default="true"/>
+    <arg name="rosbridge_port"     default="9090"/>
+
+    <arg name="vehs" value="$(arg n)Vehs"/>
+
+    <!-- Load Meta Data -->
+    <include file="$(dirname)/$(arg vehs)/$(env HOSTNAME).launch"/>
+
+    <!-- Start rosbridge -->
+    <include if="$(arg start_rosbridge)"
+             file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+        <arg name="port" value="$(arg rosbridge_port)"/>
+    </include>
+
+    <group ns="abconnect">
+        <!-- Start abconnect -->
+        <node name="streamer" pkg="aliencontrol" type="aliencontrol.py" output="screen">
+            <param name="delay" value="3"/>
+            <param name="cmd" value="node index.$(arg vehs).js"/>
+            <param name="cwd" value="$(find ros_abconnect)/streamer"/>
+        </node>
+    </group>
+
+</launch>

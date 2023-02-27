@@ -1,4 +1,4 @@
 Header header
-uint16 count
+string state
 uint8[] data
 uint8 chk

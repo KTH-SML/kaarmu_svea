@@ -6,32 +6,4 @@
         master: debby
         clients: [debby, svea2, svea5]
     </rosparam>
-
-    <!-- ABConnect Wrapper -->
-    <include file="$(find ros_abconnect)/launch/abconnect.launch">
-        <arg name="host" value="wss://intelligent-cluster-manager.herokuapp.com/signal"/>
-        <arg name="name" value="debby"/>
-        <arg name="category" value="device"/>
-        <arg name="start_delay" value="5"/>
-    </include>
-
-    <!-- ABConnect Connectors -->
-    <node name="ros_abconnect__add_remote_topic__97770bc4721244e1b4477a6a5f264c99" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
-        <rosparam>
-            role: publisher
-            client: svea2
-            id: 0
-            topic: start
-            type: std_msgs/Empty
-        </rosparam>
-    </node>
-    <node name="ros_abconnect__add_remote_topic__4978da591ba04682ae136881b27d351f" pkg="ros_abconnect" type="add_remote_topic.py" output="screen">
-        <rosparam>
-            role: publisher
-            client: svea5
-            id: 1
-            topic: start
-            type: std_msgs/Empty
-        </rosparam>
-    </node>
 </launch>

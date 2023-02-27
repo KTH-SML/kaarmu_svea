@@ -1,0 +1,28 @@
+variables:
+  $master: debby
+  $veh1: svea2
+  $veh2: svea5
+master: $master
+topics:
+  - type: std_msgs/String
+    srcs:
+      - client: $master
+        topic: transition
+    snks:
+      - client: $veh1
+        topic: transition
+      - client: $veh2
+        topic: transition
+  - type: wp3_tests/Packet
+    srcs:
+      - client: $veh1
+        topic: outgoing
+      - client: $veh2
+        topic: outgoing
+    snks:
+      - client: $master
+        topic: incoming
+      - client: $veh1
+        topic: incoming
+      - client: $veh2
+        topic: incoming

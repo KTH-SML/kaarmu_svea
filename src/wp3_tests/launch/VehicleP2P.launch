@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="n"/>
+
+    <include file="$(dirname)/abconnect.launch">
+        <arg name="n" value="$(arg n)"/>
+    </include>
+
+    <node name="vehicle" pkg="wp3_tests" type="VehicleP2P.py" output="screen">
+        <param name="standby_freq" value="5"/>
+    </node>
+
+</launch>
