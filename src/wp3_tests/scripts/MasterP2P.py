@@ -123,15 +123,15 @@ class Master:
             conf_s = json.dumps(conf)
 
             ## trans. standby -> ready w/ params
-            self.transition_all_agents_and_wait(f'{TRANS_SETUP}={conf_s}', STATE_READY)
+            self.transition_all_agents(f'{TRANS_SETUP}={conf_s}', STATE_READY)
 
             ## trans. ready -> running
-            self.transition_all_agents_and_wait(TRANS_START, STATE_RUNNING)
+            # don't wait because vehicle might be quick and finish before state
+            # arrive here
+            self.transition_all_agents(TRANS_START, STATE_RUNNING, wait=False)
 
             ## wait for running -> finished
-            print('waiting for finished')
             self.wait_for_state_all(STATE_FINISHED)
-            print('reached finished')
 
             ## save to log file w/ params
             # create directory for this specific test
@@ -157,7 +157,7 @@ class Master:
                 rospy.loginfo(f'Logged {agent}')
 
             ## trans. finished -> standby
-            self.transition_all_agents_and_wait(TRANS_STOP, STATE_STANDBY)
+            self.transition_all_agents(TRANS_STOP, STATE_STANDBY)
 
     def wait_for_agent_state(self, agent: str, state: str):
         @blocker
@@ -170,11 +170,12 @@ class Master:
         return wait()
 
     def wait_for_state_all(self, state: str):
+        print(f'Agents waiting for {state=}...', end='', flush=True)
         for agent in self.AGENTS:
             self.wait_for_agent_state(agent, state)
-        rospy.loginfo(f'Agents in {state} state')
+        print('reached')
 
-    def transition_all_agents_and_wait(self, trans: str, state: str) -> None:
+    def transition_all_agents(self, trans: str, state: str, wait: bool = True) -> None:
         # tell which transition we want to do
         self._trans = trans
         # vehicles have acknowledge the transition and will begin
@@ -183,7 +184,8 @@ class Master:
         # the vehicles wait to release the transition until NONE is sent
         self._trans = TRANS_NONE
         # wait for the vehicle to recognize the transition release
-        self.wait_for_state_all(state)
+        if wait:
+            self.wait_for_state_all(state)
 
     def receiver(self, msg: Packet):
         # arrival time is not really interesting in master but I'll keep for consistency
