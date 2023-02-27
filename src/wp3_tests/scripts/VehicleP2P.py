@@ -41,8 +41,6 @@ class Vehicle:
     simulate_tmr: rospy.Timer
     compute_tmr: rospy.Timer
 
-    enable_incoming: bool
-
     def __init__(self):
 
         ## Initialize node
@@ -127,7 +125,6 @@ class Vehicle:
                 self.outgoing_pub = rospy.Publisher('outgoing', Packet, queue_size=1)
                 self.outgoing_tmr = self.new_timer('outgoing', 1/self.STANDBY_FREQ, lambda _: self.empty_sender())
 
-                self.enable_incoming = False
                 self.incoming_sub = rospy.Subscriber('incoming',
                                                      Packet,
                                                      self.receiver)
@@ -175,7 +172,6 @@ class Vehicle:
                     self.conf['COMP_TIME']
                     * len(self.PEERS)**self.conf['COMP_ORDR']
                 )
-                self.enable_incoming = True
 
         ## READY -> RUNNING
 
@@ -201,6 +197,17 @@ class Vehicle:
 
                 self.compute_tmr.shutdown()
                 self.simulate_tmr.shutdown()
+                self.outgoing_tmr.shutdown() # make sure random_sender doesn't persist after transition
+
+                # `compute` function might have put multiple TRANS_DONE,
+                # let's clear the queue before we proceed
+                n = self._trans_queue.qsize()
+                try:
+                    for _ in range(n):
+                        msg = self._trans_queue.get(timeout=1)
+                        self.transition(msg)
+                except Empty:
+                    pass
 
                 self.outgoing_tmr = self.new_timer('outgoing',
                                                    1/self.STANDBY_FREQ,
@@ -317,10 +324,6 @@ class Vehicle:
         target_time = start - comp_time
         headway = rospy.Duration(self.x / self.v)
         latency = {}
-        # this is so we can do a trick in the end of `compute` to make
-        # sure we don't put TRANS_DONE multiple times in case `compute`
-        # is faster than the transitions.
-        safety_check = self.safe
         try:
             while peers:
                 peer = peers.pop(0)
@@ -334,15 +337,13 @@ class Vehicle:
         except Empty:
             # for some peer, we haven't received data from time (target_time)
             # i.e. we cannot compute the safety-critical function and are unsafe
-            safety_check = False
+            self.safe = False
         else:
             compute_time = rospy.Duration(self.compute_time)
-            safety_check = headway > max(latency.values()) + compute_time
+            self.safe = headway > max(latency.values()) + compute_time
 
-        if self.safe and not safety_check:
+        if self.safe:
             self.put_transition(TRANS_DONE)
-
-        self.safe = safety_check
 
 class switch_to(fragile):
 

@@ -1,1 +1,0 @@
-{"INIT_POS": 30, "TARG_VEL": 10, "TIME_STEP": 0.1, "DATA_SIZE": 24, "DATA_FREQ": 40, "COMP_TIME": 0.1, "COMP_ORDR": 1, "AGENTS": ["svea2", "svea5"]}
