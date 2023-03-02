@@ -37,10 +37,6 @@ class Vehicle:
 
     log: List[str]
 
-    outgoing_tmr: rospy.Timer
-    simulate_tmr: rospy.Timer
-    compute_tmr: rospy.Timer
-
     def __init__(self):
 
         ## Initialize node
@@ -86,23 +82,30 @@ class Vehicle:
 
     def __exit__(self, *_):
 
-        for tmr in self._timers.values():
-            tmr.shutdown()
+        for name in self._timers:
+            self.stop_timer(name)
 
         rospy.loginfo('EXITING')
 
     def new_timer(self, name, delta, cb):
-        if name in self._timers:
-            self._timers[name].shutdown()
+        self.stop_timer(name) # in case we already have a timer by this name
         dur = rospy.Duration(delta)
         tmr = rospy.Timer(dur, cb)
         self._timers[name] = tmr
         return tmr
 
+    def stop_timer(self, name):
+        if name in self._timers:
+            tmr = self._timers.pop(name)
+            tmr.shutdown()
+            tmr.join()
+
     def put_transition(self, trans: str):
         self._trans_queue.put(String(trans))
 
-    def transition(self, msg: String):
+    def transition(self, timeout=1):
+
+        msg = self._trans_queue.get(timeout=timeout)
 
         # partition the message at "=" (divide up the string into
         # everything left/right of "=") and apply strip on each part
@@ -123,7 +126,7 @@ class Vehicle:
             with switch_to(self, STATE_STANDBY):
 
                 self.outgoing_pub = rospy.Publisher('outgoing', Packet, queue_size=1)
-                self.outgoing_tmr = self.new_timer('outgoing', 1/self.STANDBY_FREQ, lambda _: self.empty_sender())
+                self.new_timer('outgoing', 1/self.STANDBY_FREQ, lambda _: self.empty_sender())
 
                 self.incoming_sub = rospy.Subscriber('incoming',
                                                      Packet,
@@ -178,40 +181,40 @@ class Vehicle:
         elif t == (STATE_READY, TRANS_START):
             with switch_to(self, STATE_RUNNING):
 
-                self.outgoing_tmr = self.new_timer('outgoing',
-                                                   1/self.conf['DATA_FREQ'],
-                                                   lambda _: self.random_sender(self.conf['DATA_SIZE']))
+                self.new_timer('outgoing',
+                               1/self.conf['DATA_FREQ'],
+                               lambda _: self.random_sender(self.conf['DATA_SIZE']))
 
-                self.compute_tmr = self.new_timer('compute',
-                                                  self.conf['COMP_TIME'],
-                                                  self.compute)
+                self.new_timer('compute',
+                               self.conf['COMP_TIME'],
+                               self.compute)
 
-                self.simulate_tmr = self.new_timer('simulate',
-                                                   self.conf['TIME_STEP'],
-                                                   self.simulate)
+                self.new_timer('simulate',
+                               self.conf['TIME_STEP'],
+                               self.simulate)
 
         ## RUNNING -> FINISHED
 
         elif t == (STATE_RUNNING, TRANS_DONE):
             with switch_to(self, STATE_FINISHED):
 
-                self.compute_tmr.shutdown()
-                self.simulate_tmr.shutdown()
-                self.outgoing_tmr.shutdown() # make sure random_sender doesn't persist after transition
+                # make sure random_sender doesn't persist after transition
+                self.stop_timer('compute')
+                self.stop_timer('simulate')
+                self.stop_timer('outgoing')
 
                 # `compute` function might have put multiple TRANS_DONE,
                 # let's clear the queue before we proceed
-                n = self._trans_queue.qsize()
                 try:
+                    n = self._trans_queue.qsize()
                     for _ in range(n):
-                        msg = self._trans_queue.get(timeout=1)
-                        self.transition(msg)
+                        self.transition()
                 except Empty:
                     pass
 
-                self.outgoing_tmr = self.new_timer('outgoing',
-                                                   1/self.STANDBY_FREQ,
-                                                   lambda _: self.log_sender(self.log))
+                self.new_timer('outgoing',
+                               1/self.STANDBY_FREQ,
+                               lambda _: self.log_sender(self.log))
 
                 self.put_transition(TRANS_NONE)
 
@@ -220,21 +223,21 @@ class Vehicle:
         elif t == (STATE_FINISHED, TRANS_STOP):
             with switch_to(self, STATE_STANDBY):
 
-                self.outgoing_tmr = self.new_timer('outgoing',
-                                                   1/self.STANDBY_FREQ,
-                                                   lambda _: self.empty_sender())
+                self.new_timer('outgoing',
+                               1/self.STANDBY_FREQ,
+                               lambda _: self.empty_sender())
 
         ## RUNNING -> STANDBY
 
         elif t == (STATE_RUNNING, TRANS_STOP):
             with switch_to(self, STATE_STANDBY):
 
-                self.compute_tmr.shutdown()
-                self.simulate_tmr.shutdown()
+                self.stop_timer('compute')
+                self.stop_timer('simulate')
 
-                self.outgoing_tmr = self.new_timer('outgoing',
-                                                   1/self.STANDBY_FREQ,
-                                                   lambda _: self.empty_sender())
+                self.new_timer('outgoing',
+                               1/self.STANDBY_FREQ,
+                               lambda _: self.empty_sender())
 
         ## READY -> STANDBY
 
@@ -257,8 +260,7 @@ class Vehicle:
             # we try-catch to not lock ourselves during get operation
             # that way we can check if the node is shutdown every 1 sec
             try:
-                msg = self._trans_queue.get(timeout=1)
-                self.transition(msg)
+                self.transition(timeout=1)
             except Empty:
                 pass
 
@@ -342,7 +344,7 @@ class Vehicle:
             compute_time = rospy.Duration(self.compute_time)
             self.safe = headway > max(latency.values()) + compute_time
 
-        if self.safe:
+        if self.x <= 0:
             self.put_transition(TRANS_DONE)
 
 class switch_to(fragile):
