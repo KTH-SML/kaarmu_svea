@@ -4,3 +4,6 @@
 [submodule "src/ros_abconnect"]
 	path = src/ros_abconnect
 	url = https://github.com/kaarmu/ros_abconnect
+[submodule "src/nats-ros-connector"]
+	path = src/nats-ros-connector
+	url = https://github.com/aljanabim/nats-ros-connector
