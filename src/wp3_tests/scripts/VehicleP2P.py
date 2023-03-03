@@ -387,8 +387,7 @@ class switch_to(fragile):
         # this mechanism is good for those states that release the
         # transition themselves as well, e.g. TRANS_INIT.
         while self.node.trans != TRANS_NONE:
-            msg = self.node._trans_queue.get()
-            self.node.transition(msg)
+            self.node.transition()
 
         self.node.state = self.state
         rospy.loginfo('Switched to %s', self.state)
