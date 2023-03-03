@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="n"/>
+    <arg name="start_rosbridge"    default="true"/>
+    <arg name="rosbridge_port"     default="9090"/>
+
+    <arg name="vehs" value="$(arg n)Vehs"/>
+
+    <!-- TODO: Load Meta Data -->
+    <rosparam>
+    </rosparam>
+
+    <!-- Start NATS Connector -->
+    <node name="nats_connector" pkg="nats_ros_connector" type="nats_connector.py" output="screen">
+        <param name="host" value="nats://<insert-link>:4222"/>
+        <remap from="/<self>/outgoing" to="/outgoing"/>
+        <rosparam>
+            publishers:
+                - /<self>/outgoing
+            subscribers:
+                - /<master>/transition
+                - /<other>/incoming
+        </rosparam>
+    </node>
+
+</launch>
