@@ -2,6 +2,7 @@
 
 import itertools
 import json
+from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
 from re import split
@@ -46,7 +47,8 @@ class Master:
         self.COMP_TIME_LIST = load_param('comp_time')
         self.COMP_ORDR_LIST = load_param('comp_ordr')
 
-        self.LOG_DIR = Path(load_param('log_dir')) / str(rospy.Time.now())
+        N = len(self.AGENTS) + 1
+        self.LOG_DIR = Path(load_param('log_dir')) / datetime.now().strftime(f"%y%m%d_%H%M_N{N:02}")
         self.USR_INP = load_param('usr_inp', False)
 
         ## Control Flow Resources
