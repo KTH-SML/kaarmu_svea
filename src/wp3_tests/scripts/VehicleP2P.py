@@ -31,7 +31,7 @@ class Vehicle:
     _state_lock: Lock
     _trans_queue: Queue
 
-    safe: bool
+    connected: bool
     x: float
     v: float
 
@@ -69,7 +69,8 @@ class Vehicle:
 
         ## State variables
 
-        self.safe = False
+        self.last_computed = rospy.Time(0)
+        self.connected = False
         self.x = 0
         self.v = 0
 
@@ -89,7 +90,7 @@ class Vehicle:
 
     def new_timer(self, name, delta, cb):
         self.stop_timer(name) # in case we already have a timer by this name
-        dur = rospy.Duration(delta)
+        dur = delta if isinstance(delta, rospy.Duration) else rospy.Duration(delta)
         tmr = rospy.Timer(dur, cb)
         self._timers[name] = tmr
         return tmr
@@ -170,8 +171,8 @@ class Vehicle:
                 self.x = self.conf['INIT_POS']
                 self.v = self.conf['TARG_VEL']
                 self.dt = self.conf['TIME_STEP']
-                self.safe = True
-                self.compute_time = (
+                self.connected = True
+                self.compute_time = rospy.Duration(
                     self.conf['COMP_TIME']
                     * len(self.PEERS)**self.conf['COMP_ORDR']
                 )
@@ -186,7 +187,7 @@ class Vehicle:
                                lambda _: self.random_sender(self.conf['DATA_SIZE']))
 
                 self.new_timer('compute',
-                               self.conf['COMP_TIME'],
+                               self.compute_time,
                                self.compute)
 
                 self.new_timer('simulate',
@@ -298,9 +299,11 @@ class Vehicle:
         sent = str(msg.header.stamp)
         arrival = str(now)
         valid = str(assert_checksum(msg.data, msg.chk))
-        safe = str(self.safe)
+        connected = str(self.connected)
+        last_computed = str(self.last_computed)
 
-        fields = [sender, sent, arrival, valid, headway, safe]
+        # TODO: Add last compute time
+        fields = [sender, sent, arrival, valid, headway, connected, last_computed]
         self.log.append(LOG_FIELD_SEP.join(fields))
 
     def simulate(self, _):
@@ -310,39 +313,46 @@ class Vehicle:
 
         self.x -= self.v * self.dt
         self.x = max(self.x, 0)
-        rospy.loginfo(f'{self.state} (safe={self.safe}): x = {self.x}')
+        rospy.loginfo(f'{self.state}: x = {self.x}')
 
-    def compute(self, _):
+    @property
+    def headway(self):
+        return rospy.Duration(self.x / self.v)
+
+    def compute(self, event):
 
         if self.state != STATE_RUNNING:
             return
 
-        start = rospy.Time.now()
-        peers = self.PEERS[:]
+        # now:      time at which this callback was called
+        # sched:    time at which this computation is scheduled
+        #           TODO should this be incorporated? Right now we assume they are the same
+        now = event.current_real
+        # sched = event.current_expected
+
         # it doesn't really make sense to do/wait to do computation on
         # data that hasn't reach us yet. So (for each peer) we pick up
         # the first packet was sent at t > target_time
-        comp_time = rospy.Duration(self.conf['COMP_TIME']/2)
-        target_time = start - comp_time
-        headway = rospy.Duration(self.x / self.v)
+        target_time = now - self.compute_time/2
         latency = {}
-        try:
-            while peers:
+        peers = self.PEERS[:]
+        while self.connected and peers:
+            try:
                 peer = peers.pop(0)
-                arrival, msg = self.incoming[peer].get(timeout=0.1)
+                arrival, msg = self.incoming[peer].get(timeout=0)
                 sent = msg.header.stamp
                 latency[peer] = arrival - msg.header.stamp
                 if not sent > target_time:
                     # put peer back and try to get a newer message
                     # (due to above stated reason)
                     peers.append(peer)
-        except Empty:
-            # for some peer, we haven't received data from time (target_time)
-            # i.e. we cannot compute the safety-critical function and are unsafe
-            self.safe = False
-        else:
-            compute_time = rospy.Duration(self.compute_time)
-            self.safe = headway > max(latency.values()) + compute_time
+            except Empty:
+                continue
+            finally:
+                now = rospy.Time.now()
+
+        self.last_computed = now
+        self.connected = self.headway > max(latency.values()) + self.compute_time
 
         if self.x <= 0:
             self.put_transition(TRANS_DONE)

@@ -149,12 +149,19 @@ class Master:
                 except KeyError as e:
                     print(f'ERROR: Lost connection to {agent}')
                     raise e
-                # dump the log data in agent-specific file
-                # each message contain the logs for this entire test
-                # encoding: ascii
-                with open(dir / agent, 'wb') as f:
-                    f.write(msg.data)
-                rospy.loginfo(f'Logged {agent}')
+                # - dump the log data in agent-specific file
+                #   each message contain the logs for this entire test
+                # - encoding: ascii
+                # - sometimes msg.data will be empty... let's check a
+                #   couple messages in that case
+                for _ in range(10):
+                    if msg.data:
+                        with open(dir / agent, 'wb') as f:
+                            f.write(msg.data)
+                        rospy.loginfo(f'Logged {agent}')
+                        break
+                else:
+                    rospy.loginfo(f'Received messages but did not receive any logs from {agent}')
 
             ## trans. finished -> standby
             self.transition_all_agents(TRANS_STOP, STATE_STANDBY)
