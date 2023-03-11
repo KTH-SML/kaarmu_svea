@@ -5,13 +5,13 @@
 
     <arg name="name"                default="$(env HOSTNAME)"/>
     <arg name="master"              default="debby"/>
-    <arg name="clients"             default="debby svea2 svea5"/>
+    <arg name="clients"             default="debby pi2 svea5"/>
     <arg name="start_rosbridge"     default="true"/>
     <arg name="rosbridge_port"      default="9090"/>
 
     <param name="master"    value="debby"/>
     <param name="name"      value="$(arg name)"/>
-    <param name="clients"   value="$(eval clients.split()[:n+1])"/>
+    <param name="clients"   value="$(eval ' '.join(clients.split()[:n+1]))"/>
 
     <!-- Start rosbridge -->
     <include if="$(arg start_rosbridge)"

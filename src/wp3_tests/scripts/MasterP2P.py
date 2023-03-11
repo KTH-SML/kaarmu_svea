@@ -36,7 +36,7 @@ class Master:
         self.CLIENTS = load_param('clients')
 
         self.AGENTS = [client
-                       for client in self.CLIENTS
+                       for client in self.CLIENTS.split()
                        if client not in (self.NAME, self.MASTER)]
 
         self.INIT_POS_LIST = load_param('init_pos')

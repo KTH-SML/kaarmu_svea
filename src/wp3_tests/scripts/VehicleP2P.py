@@ -51,7 +51,7 @@ class Vehicle:
         self.STANDBY_FREQ = load_param('~standby_freq')
 
         self.PEERS = [client
-                      for client in self.CLIENTS
+                      for client in self.CLIENTS.split()
                       if client not in (self.NAME, self.MASTER)]
 
         ## Control Flow Resources
