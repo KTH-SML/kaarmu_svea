@@ -2,13 +2,16 @@
 <launch>
 
     <arg name="n"/>
-    <arg name="start_rosbridge"    default="true"/>
-    <arg name="rosbridge_port"     default="9090"/>
 
-    <arg name="vehs" value="$(arg n)Vehs"/>
+    <arg name="name"                default="$(env HOSTNAME)"/>
+    <arg name="master"              default="debby"/>
+    <arg name="clients"             default="debby svea2 svea5"/>
+    <arg name="start_rosbridge"     default="true"/>
+    <arg name="rosbridge_port"      default="9090"/>
 
-    <!-- Load Meta Data -->
-    <include file="$(dirname)/$(arg vehs)/$(env HOSTNAME).launch"/>
+    <param name="master"    value="debby"/>
+    <param name="name"      value="$(arg name)"/>
+    <param name="clients"   value="$(eval clients.split()[:n+1])"/>
 
     <!-- Start rosbridge -->
     <include if="$(arg start_rosbridge)"
@@ -20,7 +23,7 @@
         <!-- Start abconnect -->
         <node name="streamer" pkg="aliencontrol" type="aliencontrol.py" output="screen">
             <param name="delay" value="3"/>
-            <param name="cmd" value="node index.$(arg vehs).js"/>
+            <param name="cmd" value="node index.js $(arg n) $(arg clients)"/>
             <param name="cwd" value="$(find ros_abconnect)/streamer"/>
         </node>
     </group>

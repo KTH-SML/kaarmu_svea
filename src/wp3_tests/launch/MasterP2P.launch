@@ -3,7 +3,7 @@
 
     <arg name="n"/>
 
-    <include file="$(dirname)/abconnect.launch">
+    <include file="$(dirname)/ABConnect.launch">
         <arg name="n" value="$(arg n)"/>
     </include>
 
@@ -44,7 +44,6 @@
           - 2
     </rosparam>
     <param name="log_dir" value="$(find wp3_tests)/log"/>
-    <param name="usr_inp" value="false"/>
 
     <node name="master" pkg="wp3_tests" type="MasterP2P.py" output="screen"/>
 

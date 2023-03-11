@@ -3,7 +3,7 @@
 
     <arg name="n"/>
 
-    <include file="$(dirname)/abconnect.launch">
+    <include file="$(dirname)/ABConnect.launch">
         <arg name="n" value="$(arg n)"/>
     </include>
 

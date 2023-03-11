@@ -7,17 +7,18 @@ let ros = ROS_PLUGIN.ros;
 
 let hostname = require("os").hostname();
 
-let master = "debby";
-let vehicles = [
-    "svea2",
-    "svea5",
-];
+let n = process.argv[2];
+let master = process.argv[3];
+let vehicles = process.argv.slice(4, n);
 
 let ids = {
+    // Transitions
     "debby-(transition)>svea2": 00,
     "debby-(transition)>svea5": 01,
+    // Messages from SVEA2
     "svea2-(outgoing)>debby": 02,
     "svea2-(outgoing)>svea5": 04,
+    // Messages from SVEA5
     "svea5-(outgoing)>debby": 05,
     "svea5-(outgoing)>svea2": 06,
 };
