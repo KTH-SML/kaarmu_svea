@@ -26,20 +26,14 @@ function main() {
             ids[key] = counter++;
     };
 
-    // For master...
-    vehicles.forEach(name => {
-        register(`${master}-(transition)>${name}`); // ... `transition` topics
-        register(`${master}-(incoming)>${name}`);   // ... `incoming` topics
-    });
-
-    // For each vehicle...
+    // Register connections
     vehicles.forEach(self => {
-        register(`${self}-(outgoing)>${master}`);   // ... `outgoing` to master
-        register(`${master}-(transition)>${self}`); // ... `transition` from master
-        vehicles.forEach(name => {
-            if (name === self) return; // skip self
-            register(`${self}-(outgoing)>${name}`); // ... `outgoing` from self
-            register(`${name}-(incoming)>${self}`); // ... `incoming` to self
+        register(`${master}->${self}`); // from master to self (`transition` topic)
+        register(`${self}->${master}`); // from self to master
+        vehicles.forEach(other => {
+            if (self === other) return;
+            register(`${self}->${other}`); // from self to other (`outgoing` topic)
+            register(`${other}->${self}`); // from other to self (`incoming` topic)
         });
     });
 
@@ -49,8 +43,8 @@ function main() {
         // master -> vehicle
         vehicles.forEach(name => {
             abconnect.addDeviceById(name).then(client => {
-                client.addPublisher(ids[`${hostname}-(transition)>${name}`], "transition", "std_msgs/String");
-                client.addSubscriber(ids[`${name}-(incoming)>${hostname}`], "incoming", "wp3_tests/Packet");
+                client.addPublisher(ids[`${hostname}->${name}`], "transition", "std_msgs/String");
+                client.addSubscriber(ids[`${name}->${hostname}`], "incoming", "wp3_tests/Packet");
             });
         });
 
@@ -58,15 +52,15 @@ function main() {
 
         // vehicle -> master
         abconnect.addDeviceById(master).then(client => {
-            client.addPublisher(ids[`${hostname}-(outgoing)>${master}`], "outgoing", "wp3_tests/Packet");
-            client.addSubscriber(ids[`${master}-(transition)>${hostname}`], "transition", "std_msgs/String");
+            client.addPublisher(ids[`${hostname}->${master}`], "outgoing", "wp3_tests/Packet");
+            client.addSubscriber(ids[`${master}->${hostname}`], "transition", "std_msgs/String");
         });
 
         // vehicle -> vehicle
         vehicles.forEach(name => {
             abconnect.addDeviceById(name).then(client => {
-                client.addPublisher(ids[`${hostname}-(outgoing)>${name}`], "outgoing", "wp3_tests/Packet");
-                client.addSubscriber(ids[`${name}-(incoming)>${hostname}`], "incoming", "wp3_tests/Packet");
+                client.addPublisher(ids[`${hostname}->${name}`], "outgoing", "wp3_tests/Packet");
+                client.addSubscriber(ids[`${name}->${hostname}`], "incoming", "wp3_tests/Packet");
             });
         });
 
