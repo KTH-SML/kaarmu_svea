@@ -7,9 +7,27 @@ let ros = ROS_PLUGIN.ros;
 
 let hostname = require("os").hostname();
 
-let n = process.argv[2];
+let n = Number(process.argv[2]);
 let master = process.argv[3];
-let vehicles = process.argv.slice(4, n);
+let vehicles = process.argv.slice(4, 4+n);
+
+let ids = {};
+let counter = 0;
+let register = key => {
+    if (ids[key] === undefined)
+        ids[key] = counter++;
+};
+
+// Register connections
+vehicles.forEach(self => {
+    register(`${master}->${self}`); // from master to self (`transition` topic)
+    register(`${self}->${master}`); // from self to master
+    vehicles.forEach(other => {
+        if (self === other) return;
+        register(`${self}->${other}`); // from self to other (`outgoing` topic)
+        register(`${other}->${self}`); // from other to self (`incoming` topic)
+    });
+});
 
 function main() {
 
@@ -18,24 +36,6 @@ function main() {
         {id: hostname},
         ROS_PLUGIN
     );
-
-    let ids = {};
-    let counter = 0;
-    let register = key => {
-        if (ids[key] === undefined)
-            ids[key] = counter++;
-    };
-
-    // Register connections
-    vehicles.forEach(self => {
-        register(`${master}->${self}`); // from master to self (`transition` topic)
-        register(`${self}->${master}`); // from self to master
-        vehicles.forEach(other => {
-            if (self === other) return;
-            register(`${self}->${other}`); // from self to other (`outgoing` topic)
-            register(`${other}->${self}`); // from other to self (`incoming` topic)
-        });
-    });
 
     // Create the connections
     if (hostname === master) {
