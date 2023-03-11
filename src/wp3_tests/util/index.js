@@ -23,7 +23,7 @@ function main() {
     let counter = 0;
     let register = key => {
         if (ids[key] === undefined)
-            ids[key] counter++;
+            ids[key] = counter++;
     };
 
     // For master...
