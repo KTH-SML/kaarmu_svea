@@ -11,18 +11,6 @@ let n = process.argv[2];
 let master = process.argv[3];
 let vehicles = process.argv.slice(4, n);
 
-let ids = {
-    // Transitions
-    "debby-(transition)>svea2": 00,
-    "debby-(transition)>svea5": 01,
-    // Messages from SVEA2
-    "svea2-(outgoing)>debby": 02,
-    "svea2-(outgoing)>svea5": 04,
-    // Messages from SVEA5
-    "svea5-(outgoing)>debby": 05,
-    "svea5-(outgoing)>svea2": 06,
-};
-
 function main() {
 
     const abconnect = new ABConnect(
@@ -31,6 +19,31 @@ function main() {
         ROS_PLUGIN
     );
 
+    let ids = {};
+    let counter = 0;
+    let register = key => {
+        if (ids[key] === undefined)
+            ids[key] counter++;
+    };
+
+    // For master...
+    vehicles.forEach(name => {
+        register(`${master}-(transition)>${name}`); // ... `transition` topics
+        register(`${master}-(incoming)>${name}`);   // ... `incoming` topics
+    });
+
+    // For each vehicle...
+    vehicles.forEach(self => {
+        register(`${self}-(outgoing)>${master}`);   // ... `outgoing` to master
+        register(`${master}-(transition)>${self}`); // ... `transition` from master
+        vehicles.forEach(name => {
+            if (name === self) return; // skip self
+            register(`${self}-(outgoing)>${name}`); // ... `outgoing` from self
+            register(`${name}-(incoming)>${self}`); // ... `incoming` to self
+        });
+    });
+
+    // Create the connections
     if (hostname === master) {
 
         // master -> vehicle
