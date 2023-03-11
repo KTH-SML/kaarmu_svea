@@ -1,7 +1,0 @@
-compute_order: 2
-compute_time: 1.0
-data_size: 1000
-delta_time: 0.01
-start_pos: 30
-state_freq: 30
-target_vel: 10

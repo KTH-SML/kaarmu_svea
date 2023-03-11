@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <!-- Meta Data -->
-    <rosparam>
-        name: svea2
-        master: debby
-        clients: [debby, svea2, svea5]
-    </rosparam>
-</launch>
