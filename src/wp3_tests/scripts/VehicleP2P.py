@@ -31,9 +31,11 @@ class Vehicle:
     _state_lock: Lock
     _trans_queue: Queue
 
-    connected: bool
     x: float
     v: float
+    last_sched: rospy.Time
+    last_computed: rospy.Time
+    apparent_latency: rospy.Duration
 
     log: List[str]
 
@@ -69,8 +71,9 @@ class Vehicle:
 
         ## State variables
 
+        self.last_sched = rospy.Time(0)
         self.last_computed = rospy.Time(0)
-        self.connected = False
+        self.apparent_latency = rospy.Duration(0)
         self.x = 0
         self.v = 0
 
@@ -299,11 +302,11 @@ class Vehicle:
         sent = str(msg.header.stamp)
         arrival = str(now)
         valid = str(assert_checksum(msg.data, msg.chk))
-        connected = str(self.connected)
+        last_sched = str(self.last_sched)
         last_computed = str(self.last_computed)
+        apparent_latency = str(self.apparent_latency)
 
-        # TODO: Add last compute time
-        fields = [sender, sent, arrival, valid, headway, connected, last_computed]
+        fields = [sender, sent, arrival, valid, headway, last_sched, last_computed, apparent_latency]
         self.log.append(LOG_FIELD_SEP.join(fields))
 
     def simulate(self, _):
@@ -328,7 +331,7 @@ class Vehicle:
         # sched:    time at which this computation is scheduled
         #           TODO should this be incorporated? Right now we assume they are the same
         now = event.current_real
-        # sched = event.current_expected
+        sched = event.current_expected
 
         # it doesn't really make sense to do/wait to do computation on
         # data that hasn't reach us yet. So (for each peer) we pick up
@@ -336,12 +339,12 @@ class Vehicle:
         target_time = now - self.compute_time/2
         latency = {}
         peers = self.PEERS[:]
-        while self.connected and peers:
+        while peers:
             try:
                 peer = peers.pop(0)
-                arrival, msg = self.incoming[peer].get(timeout=0)
+                _, msg = self.incoming[peer].get(timeout=0)
                 sent = msg.header.stamp
-                latency[peer] = arrival - msg.header.stamp
+                latency[peer] = now - sent
                 if not sent > target_time:
                     # put peer back and try to get a newer message
                     # (due to above stated reason)
@@ -351,8 +354,9 @@ class Vehicle:
             finally:
                 now = rospy.Time.now()
 
+        self.last_sched = sched
         self.last_computed = now
-        self.connected = self.headway > max(latency.values()) + self.compute_time
+        self.apparent_latency = max(latency.values())
 
         if self.x <= 0:
             self.put_transition(TRANS_DONE)
