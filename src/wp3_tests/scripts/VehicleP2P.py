@@ -340,17 +340,19 @@ class Vehicle:
         latency = {}
         peers = self.PEERS[:]
         while peers:
+            peer = peers.pop(0)
             try:
-                peer = peers.pop(0)
                 _, msg = self.incoming[peer].get(timeout=0)
+            except Empty:
+                peers.append(peer)
+                continue
+            else:
                 sent = msg.header.stamp
                 latency[peer] = now - sent
                 if not sent > target_time:
                     # put peer back and try to get a newer message
                     # (due to above stated reason)
                     peers.append(peer)
-            except Empty:
-                continue
             finally:
                 now = rospy.Time.now()
 
