@@ -1,9 +1,9 @@
-// const { Service, Param } = require("roslib");
-// const { ABConnect, ROSPlugin } = require("abconnect-sdk-lite");
-//
-// const ROS_PLUGIN = new ROSPlugin(9090, true);
-//
-// let ros = ROS_PLUGIN.ros;
+const { Service, Param } = require("roslib");
+const { ABConnect, ROSPlugin } = require("abconnect-sdk-lite");
+
+const ROS_PLUGIN = new ROSPlugin(9090, true);
+
+let ros = ROS_PLUGIN.ros;
 
 let hostname = require("os").hostname();
 
