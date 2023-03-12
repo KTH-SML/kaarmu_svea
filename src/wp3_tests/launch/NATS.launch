@@ -2,26 +2,39 @@
 <launch>
 
     <arg name="n"/>
-    <arg name="start_rosbridge"    default="true"/>
-    <arg name="rosbridge_port"     default="9090"/>
 
-    <arg name="vehs" value="$(arg n)Vehs"/>
+    <arg name="name"        default="$(env HOSTNAME)"/>
+    <arg name="master"      default="debby"/>
+    <arg name="clients"     default="debby pi2 svea5"/>
 
-    <!-- TODO: Load Meta Data -->
-    <rosparam>
-    </rosparam>
+    <param name="master"    value="debby"/>
+    <param name="name"      value="$(arg name)"/>
+    <param name="clients"   value="$(eval ' '.join(clients.split()[:n+1]))"/>
+
+    <!-- Python magic to get correct topic names -->
+    <arg name="is_master" value="$(eval name == master)"/>
+    <arg name="others" value="$(eval
+        ' '.join(set(clients.split()) - {master, name})
+    )"/>
+    <arg if="$(arg is_master)" name="pub_topics" value="/$(arg name)/transition"/>
+    <arg if="$(arg is_master)" name="sub_topics" value="$(eval
+        ' '.join('/%s/state' % s for s in others.split())
+    )"/>
+    <arg unless="$(arg is_master)" name="pub_topics" value="/$(arg name)/state"/>
+    <arg unless="$(arg is_master)" name="sub_topics" value="$(eval
+        ' '.join('/%s/state' % s for s in others.split())
+    ) /$(arg master)/transition"/>
 
     <!-- Start NATS Connector -->
     <node name="nats_connector" pkg="nats_ros_connector" type="nats_connector.py" output="screen">
-        <param name="host" value="nats://<insert-link>:4222"/>
-        <remap from="/<self>/outgoing" to="/outgoing"/>
-        <rosparam>
-            publishers:
-                - /<self>/outgoing
-            subscribers:
-                - /<master>/transition
-                - /<other>/incoming
-        </rosparam>
+        <param
+            name="host"         value="nats://$(arg master):4222"/>
+        <param
+            name="publishers"   value="$(eval pub_topics.split())"
+            type="yaml"/>
+        <param
+            name="subscribers"  value="$(eval sub_topics.split())"
+            type="yaml"/>
     </node>
 
 </launch>

@@ -79,11 +79,14 @@ class Master:
         ]
 
         self._trans = TRANS_NONE
-        self.transition_pub = rospy.Publisher('transition', String, queue_size=10)
+        self.transition_pub = rospy.Publisher(f'/{self.MASTER}/transition', String, queue_size=10)
         self.transition_keep_alive_tmr = rospy.Timer(rospy.Duration(1/5),
                                                      lambda _: self.transition_pub.publish(String(self._trans)))
 
-        self.incoming_sub = rospy.Subscriber('incoming', Packet, self.receiver)
+        self.incoming_subs = [
+            rospy.Subscriber(f'/{agent}/state', Packet, self.receiver)
+            for agent in self.AGENTS
+        ]
 
         # make sure clients are in standby
         return self.main
