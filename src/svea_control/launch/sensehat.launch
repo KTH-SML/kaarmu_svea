@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="map"             default="sml"/>
+
+    <!-- Start map server -->
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find svea_core)/maps/$(arg map).yaml" output="screen"/>
+
+        <!-- Start low-level interface -->
+        <node name="serial_node" pkg="rosserial_python" type="serial_node.py">
+            <param name="port" value="/dev/ttyACM0"/>
+            <param name="baud" value="250000"/>
+        </node>
+
+        <!-- Start localization -->
+        <include file="$(find svea_sensors)/launch/localize.launch">
+        </include>
+
+	<node name="nats_connector" pkg="nats_ros_connector" type="nats_connector.py" output="screen">
+		<param name="host" value="nats://sml-wan.asuscomm.com:4222"/>
+                <rosparam>
+                subscribers:
+                    - clientA_talker
+                </rosparam>
+	</node>
+
+	<node name="sensehat" pkg="svea_examples" type="sensehat.py" output="screen"/>
+
+</launch>
